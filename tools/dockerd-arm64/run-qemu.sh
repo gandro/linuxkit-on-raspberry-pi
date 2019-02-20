@@ -22,6 +22,8 @@ exec /usr/bin/qemu-system-aarch64 \
       -smp "${CPUS}" -m `expr "${MEM}" / 1048576` -cpu cortex-a57 -machine virt \
       -kernel "${KERNEL}" -initrd "${INITRD}" \
       -append "${CMDLINE}" \
+      -object rng-random,id=rng0,filename=/dev/urandom \
+      -device virtio-rng-pci,rng=rng0 \
       -device "virtio-net-pci,netdev=net0" \
       -drive "file=${CACHE_FILE},media=disk" \
       -drive "file=${CACHE_SWAP_FILE},media=disk,format=raw" \
