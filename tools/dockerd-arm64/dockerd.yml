@@ -16,7 +16,7 @@ onboot:
     image: linuxkit/format:v0.6
   - name: mount
     image: linuxkit/mount:v0.6
-    command: ["/usr/bin/mountie", "/var/lib/docker"]
+    command: ["/usr/bin/mountie", "/var/lib"]
   - name: swap
     image: linuxkit/swap:v0.6
     command: ["/swap.sh", "--path", "/var/lib/swap", "--size", "1024M"]
