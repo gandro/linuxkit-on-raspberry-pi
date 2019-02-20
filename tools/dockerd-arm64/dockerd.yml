@@ -12,14 +12,14 @@ onboot:
     image: linuxkit/sysctl:v0.6
   - name: sysfs
     image: linuxkit/sysfs:v0.6
+  - name: mount
+    image: linuxkit/mount:v0.6
+    command: ["/usr/bin/mountie", "-label", "swap", "none"]
   - name: format
     image: linuxkit/format:v0.6
   - name: mount
     image: linuxkit/mount:v0.6
     command: ["/usr/bin/mountie", "/var/lib"]
-  - name: swap
-    image: linuxkit/swap:v0.6
-    command: ["/swap.sh", "--path", "/var/lib/swap", "--size", "1024M"]
 services:
   - name: getty
     image: linuxkit/getty:2eb742cd7a68e14cf50577c02f30147bc406e478
