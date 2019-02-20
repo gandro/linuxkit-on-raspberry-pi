@@ -13,8 +13,8 @@ onboot:
   - name: sysfs
     image: linuxkit/sysfs:v0.6
   - name: mount
-    image: linuxkit/mount:v0.6
-    command: ["/usr/bin/mountie", "-label", "swap", "none"]
+    image: linuxkit/swap:v0.6
+    command: ["/sbin/swapon", "LABEL=swap"]
   - name: format
     image: linuxkit/format:v0.6
   - name: mount
