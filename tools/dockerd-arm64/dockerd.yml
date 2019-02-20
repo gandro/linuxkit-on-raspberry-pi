@@ -43,9 +43,7 @@ services:
      - /lib/modules:/lib/modules
      - /etc/docker/daemon.json:/etc/docker/daemon.json
     command: ["/usr/local/bin/docker-init", "/usr/local/bin/dockerd", "--",
-        "-H", "tcp://0.0.0.0:2375",
-        "--config-file", "/var/config/docker/daemon.json",
-        "--storage-driver", "overlay2" ]
+        "-H", "tcp://0.0.0.0:2375", "--storage-driver", "overlay2" ]
     runtime:
       mkdir: ["/var/lib/docker"]
 files:
