@@ -38,7 +38,7 @@ COPY patches/ /
 
 # Fetch source
 WORKDIR /linux
-RUN git clone --depth=1 -b ${KERNEL_BRANCH} ${KERNEL_SOURCE} /linux && \
+RUN git clone -b ${KERNEL_BRANCH} ${KERNEL_SOURCE} /linux && \
     git checkout --detach ${KERNEL_COMMIT}
 
 # enable squashfs (for rootfs) and options recommended by moby's check-config.sh
