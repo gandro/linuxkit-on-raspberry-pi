@@ -34,6 +34,8 @@ ENV KERNEL_SOURCE=https://github.com/raspberrypi/linux.git
 ENV KERNEL_BRANCH=rpi-4.19.y
 ENV KERNEL_COMMIT=e2d2941326922b63d722ebc46520c3a2287b675f
 
+COPY patches/ /
+
 # Fetch source
 WORKDIR /linux
 RUN git clone --depth=1 -b ${KERNEL_BRANCH} ${KERNEL_SOURCE} /linux && \
