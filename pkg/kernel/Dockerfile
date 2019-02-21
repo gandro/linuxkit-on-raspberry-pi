@@ -43,7 +43,11 @@ RUN tar cJf /out/src/linux.tar.xz /linux
 
 # enable squashfs (for rootfs) and options recommended by moby's check-config.sh
 RUN ./scripts/config --file arch/arm64/configs/bcmrpi3_defconfig \
+    --undefine CONFIG_DEVTMPFS_MOUNT \
     --enable CONFIG_SQUASHFS \
+    --enable CONFIG_TRANSPARENT_HUGEPAGE \
+    --enable CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS \
+    --enable CONFIG_TRANSPARENT_HUGE_PAGECACHE \
     --enable CONFIG_NAMESPACES \
     --enable CONFIG_NET_NS \
     --enable CONFIG_PID_NS \
@@ -72,10 +76,14 @@ RUN ./scripts/config --file arch/arm64/configs/bcmrpi3_defconfig \
     --enable CONFIG_POSIX_MQUEUE \
     --enable CONFIG_USER_NS \
     --enable CONFIG_SECCOMP \
+    --enable CONFIG_BPF_SYSCALL \
+    --enable CONFIG_CGROUP_BPF \
     --enable CONFIG_CGROUP_PIDS \
     --enable CONFIG_MEMCG_SWAP \
     --enable CONFIG_MEMCG_SWAP_ENABLED \
+    --enable CONFIG_MEMCG_KMEM \
     --enable CONFIG_BLK_CGROUP \
+    --enable CONFIG_CGROUP_WRITEBACK \
     --enable CONFIG_BLK_DEV_THROTTLING \
     --enable CONFIG_IOSCHED_CFQ \
     --enable CONFIG_CFQ_GROUP_IOSCHED \
@@ -83,6 +91,7 @@ RUN ./scripts/config --file arch/arm64/configs/bcmrpi3_defconfig \
     --enable CONFIG_CGROUP_HUGETLB \
     --enable CONFIG_NET_CLS_CGROUP \
     --enable CONFIG_CGROUP_NET_PRIO \
+    --enable CONFIG_SOCK_CGROUP_DATA \
     --enable CONFIG_CFS_BANDWIDTH \
     --enable CONFIG_FAIR_GROUP_SCHED \
     --enable CONFIG_RT_GROUP_SCHED \
