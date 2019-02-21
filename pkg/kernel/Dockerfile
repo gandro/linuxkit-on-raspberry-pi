@@ -33,7 +33,7 @@ RUN apk add \
 ENV KERNEL_SOURCE=https://github.com/raspberrypi/linux.git
 ENV KERNEL_COMMIT=e2d2941326922b63d722ebc46520c3a2287b675f
 
-COPY / /
+COPY patches /patches
 
 # Fetch source
 WORKDIR /linux
