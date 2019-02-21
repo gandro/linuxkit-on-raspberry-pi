@@ -6,7 +6,7 @@ ENV REGDB_COMMIT=15fd5b499c641fad65d2dd2e1501e8825fe90b28
 WORKDIR /
 RUN git clone ${REGDB_URL} && \
     cd /wireless-regdb && \
-    git checkout ${REGDB_COMMIT}
+    git checkout --detach ${REGDB_COMMIT}
 
 RUN mkdir -p /out/lib/firmware && \
     cp -a /wireless-regdb/regulatory.db /out/lib/firmware && \

@@ -32,14 +32,12 @@ RUN apk add \
 
 ENV KERNEL_SOURCE=https://github.com/raspberrypi/linux.git
 ENV KERNEL_BRANCH=rpi-4.19.y
+ENV KERNEL_COMMIT=e2d2941326922b63d722ebc46520c3a2287b675f
 
 # Fetch source
-RUN git clone --depth=1 -b ${KERNEL_BRANCH} ${KERNEL_SOURCE} /linux
 WORKDIR /linux
-
-# Save kernel source
-RUN mkdir -p /out/src
-RUN tar cJf /out/src/linux.tar.xz /linux
+RUN git clone --depth=1 -b ${KERNEL_BRANCH} ${KERNEL_SOURCE} /linux && \
+    git checkout --detach ${KERNEL_COMMIT}
 
 # enable squashfs (for rootfs) and options recommended by moby's check-config.sh
 RUN ./scripts/config --file arch/arm64/configs/bcmrpi3_defconfig \
@@ -127,6 +125,20 @@ RUN ./scripts/config --file arch/arm64/configs/bcmrpi3_defconfig \
     --enable CONFIG_BLK_DEV_DM \
     --enable CONFIG_DM_THIN_PROVISIONING \
     --enable CONFIG_OVERLAY_FS
+
+# Apply local common patches if present
+RUN set -e && \
+    if [ -d /patches ]; then \
+        for patch in /patches/*.patch; do \
+            echo "Applying $patch"; \
+            patch -t -F0 -N -u -p1 < "$patch"; \
+        done; \
+    fi
+
+RUN mkdir -p /out/src
+
+# Save kernel source
+RUN tar cJf /out/src/linux.tar.xz /linux
 
 # Kernel config
 RUN make bcmrpi3_defconfig
