@@ -30,16 +30,14 @@ RUN apk add \
     xz-dev \
     zlib-dev
 
-ENV KERNEL_SOURCE=https://github.com/raspberrypi/linux.git
-ENV KERNEL_BRANCH=rpi-4.19.y
 ENV KERNEL_COMMIT=e2d2941326922b63d722ebc46520c3a2287b675f
+ENV KERNEL_SOURCE=https://github.com/raspberrypi/linux/tarball/${KERNEL_COMMIT}
 
 COPY patches/ /
 
 # Fetch source
 WORKDIR /linux
-RUN git clone -b ${KERNEL_BRANCH} ${KERNEL_SOURCE} /linux && \
-    git checkout --detach ${KERNEL_COMMIT}
+RUN curl -L ${KERNEL_SOURCE} | tar xz --strip-components=1
 
 # enable squashfs (for rootfs) and options recommended by moby's check-config.sh
 RUN ./scripts/config --file arch/arm64/configs/bcmrpi3_defconfig \
