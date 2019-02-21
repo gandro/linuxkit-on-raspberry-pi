@@ -139,7 +139,7 @@ RUN set -e && \
 RUN mkdir -p /out/src
 
 # Save kernel source
-RUN tar cJf --exclude=/linux/.git /out/src/linux.tar.xz /linux
+RUN tar cJf /out/src/linux.tar.xz --exclude=/linux/.git /linux
 
 # Kernel config
 RUN make bcmrpi3_defconfig
