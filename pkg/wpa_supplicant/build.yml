@@ -1,4 +1,5 @@
 image: wpa_supplicant
+org: linuxkitrpi
 config:
   binds:
    - /etc/wpa_supplicant:/etc/wpa_supplicant
