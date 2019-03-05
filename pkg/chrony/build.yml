@@ -5,8 +5,6 @@ config:
   binds:
    - /etc/resolv.conf:/etc/resolv.conf
    - /var/lib/chrony:/var/lib/chrony
-  tmpfs:
-   - /var/run/chrony
   runtime:
     mkdir: ["/var/lib/chrony"]
   capabilities:
