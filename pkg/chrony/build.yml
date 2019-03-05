@@ -4,5 +4,7 @@ network: true
 config:
   binds:
    - /var/lib/chrony:/var/lib/chrony
+  runtime:
+    mkdir: ["/var/lib/chrony"]
   capabilities:
    - CAP_SYS_TIME
