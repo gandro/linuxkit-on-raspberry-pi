@@ -10,4 +10,3 @@ ENTRYPOINT []
 CMD ["/usr/sbin/chronyd", "-f", "/etc/chrony/chrony.conf", "-d", "-s"]
 WORKDIR /
 COPY --from=base /out/ /
-RUN mkdir -m 0770 -p /var/run/chrony

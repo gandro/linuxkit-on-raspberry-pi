@@ -9,3 +9,6 @@ config:
     mkdir: ["/var/lib/chrony"]
   capabilities:
    - CAP_SYS_TIME
+   - CAP_CHOWN
+   - CAP_SETUID
+   - CAP_SETGID
