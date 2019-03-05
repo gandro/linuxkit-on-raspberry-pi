@@ -1,5 +1,0 @@
-image: datetime-persistenced
-org: linuxkitrpi
-config:
-  capabilities:
-   - CAP_SYS_TIME
