@@ -8,6 +8,6 @@ RUN rm -rf /out/etc/apk /out/lib/apk /out/var/cache
 FROM scratch
 ENTRYPOINT []
 WORKDIR /
-COPY etc/ /etc/
 COPY --from=base /out/ /
+COPY etc/ /etc/
 CMD ["/usr/sbin/chronyd", "-f", "/etc/chrony/chrony.conf", "-d", "-s"]
