@@ -1,4 +1,4 @@
-FROM linuxkit/alpine:9f00542b8b74b7815936affb11dedb86945fe4ac AS kernel-build
+FROM linuxkit/alpine:518c2ed0f398c5508969ac5e033607201fb419ed AS kernel-build
 RUN apk add \
     argp-standalone \
     automake \
@@ -31,7 +31,11 @@ RUN apk add \
     zlib-dev
 
 ENV KERNEL_SOURCE=https://github.com/raspberrypi/linux.git
-ENV KERNEL_COMMIT=e2d2941326922b63d722ebc46520c3a2287b675f
+ENV KERNEL_COMMIT=089ae6dda1d91d39f21e223a6413d552be798bce
+
+ENV WIREGUARD_VERSION=0.0.20190227
+ENV WIREGUARD_SHA256="fcdb26fd2692d9e1dee54d14418603c38fbb973a06ce89d08fbe45292ff37f79"
+ENV WIREGUARD_URL=https://git.zx2c4.com/WireGuard/snapshot/WireGuard-${WIREGUARD_VERSION}.tar.xz
 
 # Fetch source
 WORKDIR /linux
@@ -148,8 +152,16 @@ RUN make -j "$(getconf _NPROCESSORS_ONLN)" KCFLAGS="-fno-pie" && \
     cp arch/arm64/boot/Image.gz /out/kernel && \
     cp System.map /out
 
+# WireGuard
+RUN curl -fsSL -o /wireguard.tar.xz "${WIREGUARD_URL}" && \
+    echo "${WIREGUARD_SHA256}  /wireguard.tar.xz" | sha256sum -c - && \
+    cp /wireguard.tar.xz /out/src/ && \
+    tar -C / --one-top-level=wireguard --strip-components=2 -xJf /wireguard.tar.xz "WireGuard-${WIREGUARD_VERSION}/src" && \
+    make -j "$(getconf _NPROCESSORS_ONLN)" M="/wireguard" modules
+
 # Modules and Device Tree binaries
 RUN make INSTALL_MOD_PATH=/tmp/kernel-modules modules_install && \
+    make INSTALL_MOD_PATH=/tmp/kernel-modules M="/wireguard" modules_install && \
     ( DVER=$(basename $(find /tmp/kernel-modules/lib/modules/ -mindepth 1 -maxdepth 1)) && \
     cd /tmp/kernel-modules/lib/modules/$DVER && \
     rm build source && \
