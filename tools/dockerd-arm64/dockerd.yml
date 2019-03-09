@@ -15,14 +15,14 @@ onboot:
   - name: mount
     image: linuxkit/swap:v0.6
     command: ["/sbin/swapon", "LABEL=swap"]
+  - name: mount
+    image: linuxkit/mount:v0.6
+    command: ["/usr/bin/mountie", "-label", "dockerconf", "/var/config/docker"]
   - name: format
     image: linuxkit/format:v0.6
   - name: mount
     image: linuxkit/mount:v0.6
     command: ["/usr/bin/mountie", "/var/lib/docker"]
-  - name: metadata
-    image: linuxkit/metadata:566864a2e22e318c478ab284f5675da7a7a12f38
-    command: ["/usr/bin/metadata", "cdrom"]
 services:
   - name: getty
     image: linuxkit/getty:01993189b8c583dc91cbbc7d4be131832c0fc205
@@ -44,12 +44,13 @@ services:
      - /etc/resolv.conf:/etc/resolv.conf
      - /var/lib/docker:/var/lib/docker
      - /lib/modules:/lib/modules
-     - /run/config/docker:/var/config/docker
+     - /var/config/docker:/var/config/docker
     command: ["/usr/local/bin/docker-init", "/usr/local/bin/dockerd", "--",
         "--config-file", "/var/config/docker/daemon.json",
         "--host", "tcp://0.0.0.0:2375", "--storage-driver", "overlay2"]
     runtime:
-      mkdir: ["/var/lib/docker"]
+      mkdir:
+        - /var/lib/docker
 trust:
   org:
     - linuxkit
