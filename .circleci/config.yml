@@ -12,6 +12,7 @@ jobs:
   build:
     executor: dockerd-arm64
     steps:
+      - checkout
       - run:
           name: Wait for dockerd-arm64 to come up
           command: dockerize -wait "http://${DOCKER_HOST}/v1.39/info" -timeout 5m
