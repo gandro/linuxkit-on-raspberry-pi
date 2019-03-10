@@ -16,7 +16,7 @@ set -o errexit
 : ${DOCKER_CONF:="/dockerd/daemon.json"}
 : ${DOCKER_CONF_ISO:="dockerconf.iso"}
 
-[ -d "${CACHE}" ] || { echo "error: volume ${CACHE} does not exist!"; exit 1; }
+[ -d "${CACHE}" ] || mkdir -p "${CACHE}"
 [ -f "${CACHE_FILE}" ] || qemu-img create -f qcow2 "${CACHE_FILE}" "${CACHE_SIZE}"
 [ -f "${CACHE_SWAP_FILE}" ] || { fallocate -l "${CACHE_SWAP_SIZE}" ${CACHE_SWAP_FILE}; mkswap -L "swap" ${CACHE_SWAP_FILE}; }
 genisoimage -quiet -output "${DOCKER_CONF_ISO}" -volid "dockerconf" -joliet -rock "${DOCKER_CONF}"
