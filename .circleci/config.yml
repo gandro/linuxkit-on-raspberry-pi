@@ -18,25 +18,9 @@ jobs:
       - run:
           name: Log in to Docker Hub
           command: docker login -u "${DOCKER_LOGIN}" -p "${DOCKER_PASSWORD}"
-
-  build_tools_linuxkit_cli:
-    executor: dockerd-arm64
-    steps:
       - run: |
           cd tools/linuxkit-cli
           docker build -t linuxkitrpi/linuxkit-cli .
-
-  publish_tools_linuxkit_cli:
-    executor: dockerd-arm64
-    steps:
       - run: |
           cd tools/linuxkit-cli
           docker push linuxkitrpi/linuxkit-cli
-
-workflows:
-  version: 2
-  build_and_publish:
-    jobs:
-      - setup_arm64_dockerd
-      - build_tools_linuxkit_cli
-      - publish_tools_linuxkit_cli
