@@ -9,7 +9,7 @@ executors:
       # docker daemon (on arm64)
       - image: linuxkitrpi/dockerd-arm64
 jobs:
-  setup_arm64_dockerd:
+  build:
     executor: dockerd-arm64
     steps:
       - run:
