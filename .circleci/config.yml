@@ -19,9 +19,12 @@ jobs:
       - run:
           name: Log in to Docker Hub
           command: docker login -u "${DOCKER_LOGIN}" -p "${DOCKER_PASSWORD}"
-      - run: |
-          cd tools/linuxkit-cli
-          docker build -t linuxkitrpi/linuxkit-cli .
+      - run:
+          name: Build linuxkit-cli
+          command: |
+            cd tools/linuxkit-cli
+            docker build -t linuxkitrpi/linuxkit-cli .
+          no_output_timeout: 45m
       - run: |
           cd tools/linuxkit-cli
           docker push linuxkitrpi/linuxkit-cli
