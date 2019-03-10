@@ -22,7 +22,7 @@ set -o errexit
 [ -f "${CACHE_SWAP_FILE}" ] || { fallocate -l "${CACHE_SWAP_SIZE}" ${CACHE_SWAP_FILE}; mkswap -L "swap" ${CACHE_SWAP_FILE}; }
 
 [ "${MEM}" -lt "${MEM_LIMIT}" ] || MEM="${MEM_LIMIT}"
-[ "${CPUS}" -lt "$CPUS_LIMIT}" ] || CPUS="${CPUS_LIMIT}"
+[ "${CPUS}" -lt "${CPUS_LIMIT}" ] || CPUS="${CPUS_LIMIT}"
 
 genisoimage -quiet -output "${DOCKER_CONF_ISO}" -volid "dockerconf" -joliet -rock "${DOCKER_CONF}"
 exec /usr/bin/qemu-system-aarch64 \
