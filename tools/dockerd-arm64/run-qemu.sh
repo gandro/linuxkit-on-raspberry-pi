@@ -5,6 +5,7 @@ set -o errexit
 : ${INITRD:=/dockerd/dockerd-initrd.img}
 : ${CMDLINE:=`cat /dockerd/dockerd-cmdline`}
 : ${CPUS:=`nproc`}
+: ${CPUS_LIMIT:=8}
 : ${MEM:=2147483648}
 : ${MEM_LIMIT:=`cat /sys/fs/cgroup/memory/memory.limit_in_bytes`}
 : ${PORT:=2375}
@@ -19,9 +20,11 @@ set -o errexit
 [ -d "${CACHE}" ] || mkdir -p "${CACHE}"
 [ -f "${CACHE_FILE}" ] || qemu-img create -f qcow2 "${CACHE_FILE}" "${CACHE_SIZE}"
 [ -f "${CACHE_SWAP_FILE}" ] || { fallocate -l "${CACHE_SWAP_SIZE}" ${CACHE_SWAP_FILE}; mkswap -L "swap" ${CACHE_SWAP_FILE}; }
-genisoimage -quiet -output "${DOCKER_CONF_ISO}" -volid "dockerconf" -joliet -rock "${DOCKER_CONF}"
-[ "${MEM}" -lt "${MEM_LIMIT}" ] || MEM="${MEM_LIMIT}"
 
+[ "${MEM}" -lt "${MEM_LIMIT}" ] || MEM="${MEM_LIMIT}"
+[ "${CPUS}" -lt "$CPUS_LIMIT}" ] || CPUS="${CPUS_LIMIT}"
+
+genisoimage -quiet -output "${DOCKER_CONF_ISO}" -volid "dockerconf" -joliet -rock "${DOCKER_CONF}"
 exec /usr/bin/qemu-system-aarch64 \
       -smp "${CPUS}" -cpu cortex-a57 -machine virt \
       -m `expr "${MEM}" / 1048576` \
