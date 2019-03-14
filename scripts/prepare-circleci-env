@@ -4,7 +4,7 @@ set -eu
 echo "Install helper scripts for global use"
 SCRIPTS_SRC=$(dirname "$0")
 SCRIPTS_DST=$(printf "%s" "$PATH" | cut -d: -f1)
-cp "${SCRIPTS}/run-if-changed" "${SCRIPTS_DST}"
+cp "${SCRIPTS_SRC}/run-if-changed" "${SCRIPTS_DST}"
 
 echo "Wait for dockerd-arm64 to come up"
 dockerize -wait "http://${DOCKER_HOST}/v1.39/info" -timeout 5m
