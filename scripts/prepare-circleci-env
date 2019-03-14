@@ -7,8 +7,7 @@
 set -eu
 
 echo "Install helper scripts for global use"
-SCRIPTS_SRC=$(dirname "$0")
-sudo cp "/usr/local/bin/run-if-changed" "${SCRIPTS_DST}"
+sudo cp "$(dirname "$0")/run-if-changed" "/usr/local/bin/"
 
 echo "Wait for dockerd-arm64 to come up"
 dockerize -wait "http://${DOCKER_HOST}/v1.39/info" -timeout 5m
