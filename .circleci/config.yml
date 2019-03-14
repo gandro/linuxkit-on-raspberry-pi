@@ -1,6 +1,7 @@
 version: 2.1
-executors:
-  dockerd-arm64:
+
+jobs:
+  build:
     docker:
       # docker and git client (on native host)
       - image: circleci/buildpack-deps:bionic-scm
@@ -8,23 +9,24 @@ executors:
           - DOCKER_HOST: localhost:2375
       # docker daemon (on arm64)
       - image: linuxkitrpi/dockerd-arm64
-jobs:
-  build:
-    executor: dockerd-arm64
     steps:
       - checkout
       - run:
           name: Wait for dockerd-arm64 to come up
-          command: dockerize -wait "http://${DOCKER_HOST}/v1.39/info" -timeout 5m
+          command: dockerize -wait "http://${DOCKER_HOST}/v1.39/info" -timeout 10m
+      - run:
+          name: Build tools/linuxkit-cli
+          shell: ./circleci/run-if-changed -d tools/linuxkit-cli
+          command: |
+            cd tools/linuxkit-cli
+            docker build -t linuxkitrpi/linuxkit-cli .
+          no_output_timeout: 30m
       - run:
           name: Log in to Docker Hub
           command: docker login -u "${DOCKER_LOGIN}" -p "${DOCKER_PASSWORD}"
       - run:
-          name: Build linuxkit-cli
+          name: Push tools/linuxkit-cli
+          shell: ./circleci/run-if-changed -d tools/linuxkit-cli
           command: |
             cd tools/linuxkit-cli
-            docker build -t linuxkitrpi/linuxkit-cli .
-          no_output_timeout: 45m
-      - run: |
-          cd tools/linuxkit-cli
-          docker push linuxkitrpi/linuxkit-cli
+            docker push linuxkitrpi/linuxkit-cli

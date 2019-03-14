@@ -1,0 +1,42 @@
+#!/bin/sh
+set -e
+
+git_tree_hash() {
+  "${GIT:-git}" -C "$1" rev-parse "HEAD:./"
+}
+
+git_file_hash() {
+  "${GIT:-git}" hash-object "$1"
+}
+
+git_combined_hash() {
+  printf '%s\0' "$@" | "${GIT:-git}" hash-object --stdin
+}
+
+while getopts ":c:d:f:h" opt; do
+  case $opt in
+     d) RUNID=$(git_combined_hash "$RUNID" $(git_tree_hash "$OPTARG")) ;;
+     f) RUNID=$(git_combined_hash "$RUNID" $(git_file_hash "$OPTARG")) ;;
+     c) CMD="$OPTARG" ;;
+     h) echo "usage: $0 [-f file] [-d git-tree] [-c command] [argument...]" ; exit 0 ;;
+    \?) echo "$0: invalid option: -$OPTARG" >&2 ; exit 1 ;;
+  esac
+done
+shift $((OPTIND-1))
+
+if [ -n "$CMD" ] ; then
+  set -- /bin/sh -eo pipefail -c "$CMD" "$@"
+fi
+
+RUNID=$(git_combined_hash "$RUNID" $(git_combined_hash "$@"))
+RUNDIRECTORY="${XDG_CACHE_HOME:-"${HOME}/.cache"}/run-if-changed"
+RUNFILE="${RUNDIRECTORY}/${RUNID}"
+mkdir -p "${RUNDIRECTORY}"
+
+if [ -f "$RUNFILE" ] ; then
+  printf 'Skipping previously executed run %.12s\n' "$RUNID"
+  exit
+fi
+
+printf 'Running as %.12s\n' "$RUNID"
+"$@" && touch "$RUNFILE"
