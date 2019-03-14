@@ -11,12 +11,10 @@ jobs:
       - image: linuxkitrpi/dockerd-arm64
     steps:
       - checkout
-      - run:
-          name: Wait for dockerd-arm64 to come up
-          command: dockerize -wait "http://${DOCKER_HOST}/v1.39/info" -timeout 10m
+      - run: scripts/prepare-circleci-env
       - run:
           name: Build tools/linuxkit-cli
-          shell: ./circleci/run-if-changed -d tools/linuxkit-cli
+          shell: run-if-changed -d tools/linuxkit-cli
           command: |
             cd tools/linuxkit-cli
             docker build -t linuxkitrpi/linuxkit-cli .
