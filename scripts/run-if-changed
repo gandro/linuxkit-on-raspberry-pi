@@ -25,7 +25,11 @@ done
 shift $((OPTIND-1))
 
 if [ -n "$CMD" ] ; then
-  set -- /bin/sh -eo pipefail -c "$CMD" "$@"
+  if [ -x "/bin/bash" ] ; then
+    set -- /bin/bash -eo pipefail -c "$CMD" "$@"
+  else
+    set -- /bin/sh -e -c "$CMD" "$@"
+  fi
 fi
 
 RUNID=$(git_combined_hash "$RUNID" $(git_combined_hash "$@"))
