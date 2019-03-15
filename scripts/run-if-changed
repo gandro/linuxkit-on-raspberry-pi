@@ -33,7 +33,7 @@ if [ -n "$CMD" ] ; then
 fi
 
 RUNID=$(git_combined_hash "$RUNID" $(git_combined_hash "$@"))
-RUNDIRECTORY="${XDG_CACHE_HOME:-"${HOME}/.cache"}/run-if-changed"
+RUNDIRECTORY="${CACHE:-".cache"}/run-if-changed"
 RUNFILE="${RUNDIRECTORY}/${RUNID}"
 mkdir -p "${RUNDIRECTORY}"
 
