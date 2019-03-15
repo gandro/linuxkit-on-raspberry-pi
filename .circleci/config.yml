@@ -10,6 +10,9 @@ jobs:
       # docker daemon (on arm64)
       - image: linuxkitrpi/dockerd-arm64
     steps:
+      - restore_cache:
+          keys:
+            - cached-runs
       - checkout
       - run: scripts/prepare-circleci-env
       - run:
@@ -24,7 +27,11 @@ jobs:
           command: docker login -u "${DOCKER_LOGIN}" -p "${DOCKER_PASSWORD}"
       - run:
           name: Push tools/linuxkit-cli
-          shell: ./circleci/run-if-changed -d tools/linuxkit-cli
+          shell: run-if-changed -d tools/linuxkit-cli
           command: |
             cd tools/linuxkit-cli
             docker push linuxkitrpi/linuxkit-cli
+      - save_cache:
+          key: cached-runs
+          paths:
+            - ".cache"
