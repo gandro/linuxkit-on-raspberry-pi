@@ -1,4 +1,4 @@
-FROM golang:1.11 AS builder
+FROM golang:1.12.0 AS builder
 
 ENV LINUXKIT_REPO=https://github.com/linuxkit/linuxkit.git
 ENV LINUXKIT_COMMIT=b5c03581e746f35d96ade3d0f77527ddab0b46b4
