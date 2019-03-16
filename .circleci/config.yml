@@ -3,10 +3,8 @@ version: 2.1
 jobs:
   build:
     docker:
-      # docker and git client (on native host)
-      - image: circleci/buildpack-deps:bionic-scm
-        environment:
-          - DOCKER_HOST: localhost:2375
+      # docker client (on native host)
+      - image: linuxkitrpi/circleci-builder
       # docker daemon (on arm64)
       - image: linuxkitrpi/dockerd-arm64
     steps:
@@ -16,8 +14,8 @@ jobs:
             - run-if-changed-{{ .Branch }}
             - run-if-changed
       - run:
-          name: Prepare CircleCI Environment
-          command: scripts/prepare-circleci-env
+          name: Wait for dockerd-arm64 to come up
+          command: wait-for-dockerd
       - run:
           name: Build tools/linuxkit-cli
           shell: run-if-changed -d tools/linuxkit-cli
