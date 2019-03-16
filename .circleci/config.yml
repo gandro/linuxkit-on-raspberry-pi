@@ -12,9 +12,12 @@ jobs:
     steps:
       - restore_cache:
           keys:
-            - cached-runs
+            - run-if-changed-{{ .Branch }}
+            - run-if-changed
       - checkout
-      - run: scripts/prepare-circleci-env
+      - run:
+          name: Prepare CircleCI Environment
+          command: scripts/prepare-circleci-env
       - run:
           name: Build tools/linuxkit-cli
           shell: run-if-changed -d tools/linuxkit-cli
@@ -32,6 +35,6 @@ jobs:
             cd tools/linuxkit-cli
             docker push linuxkitrpi/linuxkit-cli
       - save_cache:
-          key: cached-runs
+          key: run-if-changed-{{ .Branch }}-{{ .BuildNum }}
           paths:
-            - ".cache"
+            - ".cache/run-if-changed"
