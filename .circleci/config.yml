@@ -10,11 +10,11 @@ jobs:
       # docker daemon (on arm64)
       - image: linuxkitrpi/dockerd-arm64
     steps:
+      - checkout
       - restore_cache:
           keys:
             - run-if-changed-{{ .Branch }}
             - run-if-changed
-      - checkout
       - run:
           name: Prepare CircleCI Environment
           command: scripts/prepare-circleci-env
