@@ -13,12 +13,17 @@ git_combined_hash() {
   printf '%s\0' "$@" | "${GIT:-git}" hash-object --stdin
 }
 
-while getopts ":c:d:f:h" opt; do
+env_print_var() {
+  eval printf '%s=%s' "$1" "\"\${$1:-}\""
+}
+
+while getopts ":c:d:e:f:h" opt; do
   case $opt in
-     d) RUNID=$(git_combined_hash "$RUNID" $(git_tree_hash "$OPTARG")) ;;
-     f) RUNID=$(git_combined_hash "$RUNID" $(git_file_hash "$OPTARG")) ;;
      c) CMD="$OPTARG" ;;
-     h) echo "usage: $0 [-f file] [-d git-tree] [-c command] [argument...]" ; exit 0 ;;
+     d) RUNID=$(git_combined_hash "$RUNID" $(git_tree_hash "$OPTARG")) ;;
+     e) RUNID=$(git_combined_hash "$RUNID" $(env_print_var "$OPTARG")) ;;
+     f) RUNID=$(git_combined_hash "$RUNID" $(git_file_hash "$OPTARG")) ;;
+     h) echo "usage: $0 [-c command] [-d git-tree] [-e name] [-f file] [argument...]" ; exit 0 ;;
     \?) echo "$0: invalid option: -$OPTARG" >&2 ; exit 1 ;;
   esac
 done

@@ -18,20 +18,15 @@ jobs:
           command: wait-for-dockerd
       - run:
           name: Build tools/linuxkit-cli
-          shell: run-if-changed -d tools/linuxkit-cli
+          shell: run-if-changed -e CIRCLE_BRANCH -e DOCKER_LOGIN -e DOCKER_PASSWORD -d tools/linuxkit-cli
           command: |
             cd tools/linuxkit-cli
             docker build -t linuxkitrpi/linuxkit-cli .
+            if [ "$CIRCLE_BRANCH" = "master" ] ; then
+              docker login -u "${DOCKER_LOGIN}" -p "${DOCKER_PASSWORD}"
+              docker push linuxkitrpi/linuxkit-cli
+            fi
           no_output_timeout: 30m
-      - run:
-          name: Log in to Docker Hub
-          command: docker login -u "${DOCKER_LOGIN}" -p "${DOCKER_PASSWORD}"
-      - run:
-          name: Push tools/linuxkit-cli
-          shell: run-if-changed -d tools/linuxkit-cli
-          command: |
-            cd tools/linuxkit-cli
-            docker push linuxkitrpi/linuxkit-cli
       - save_cache:
           key: run-if-changed-{{ .Branch }}-{{ .BuildNum }}
           paths:
