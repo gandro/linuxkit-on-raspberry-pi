@@ -38,10 +38,10 @@ jobs:
             for pkg in pkg/*/ ; do
                 echo "Building $pkg"
                 run-if-changed -d "$pkg" -- docker exec -e PKG="$pkg" -t -i linuxkit-cli /bin/sh -eu -c '
-                  linuxkit pkg build "$PKG"
+                  linuxkit pkg build -disable-content-trust "$PKG"
                   if [ "$CIRCLE_BRANCH" = "master" ] ; then
                     docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD"
-                    linuxkit pkg push "$PKG"
+                    linuxkit pkg push -disable-content-trust "$PKG"
                   fi
                 '
             done
