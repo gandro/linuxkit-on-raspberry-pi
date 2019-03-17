@@ -35,9 +35,9 @@ jobs:
               linuxkitrpi/linuxkit-cli cat
 
             docker cp -a . linuxkit-cli:/workspace
-            for pkg in pkg/* ; do
+            for pkg in pkg/*/ ; do
                 echo "Building $pkg"
-                run-if-changed -d "$pkg" -- docker exec -e PKG=$pkg -t -i linuxkit-cli /bin/sh -c '
+                run-if-changed -d "$pkg" -- docker exec -e PKG="$pkg" -t -i linuxkit-cli /bin/sh -c '
                   linuxkit pkg build "$PKG"
                   if [ "$CIRCLE_BRANCH" = "master" ] ; then
                     docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD"
