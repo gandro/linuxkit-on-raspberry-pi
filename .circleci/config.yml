@@ -11,8 +11,6 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - run-if-changed-{{ .Branch }}
-            - run-if-changed
             - v1-docker-layer-cache
       - run:
           name: Wait for dockerd-arm64 to come up
@@ -24,12 +22,10 @@ jobs:
               docker load -i /tmp/images.tar
             fi
       - run:
-          name: Build and push tools/linuxkit-cli
-          shell: run-if-changed -d tools/linuxkit-cli
+          name: Build tools/linuxkit-cli
           command: |
             cd tools/linuxkit-cli
-            docker pull linuxkitrpi/linuxkit-cli:latest
-            docker build --cache-from=linuxkitrpi/linuxkit-cli:latest -t linuxkitrpi/linuxkit-cli .
+            docker build -t linuxkitrpi/linuxkit-cli .
             if [ "$CIRCLE_BRANCH" = "master" ] ; then
               docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD"
               docker push linuxkitrpi/linuxkit-cli
@@ -46,7 +42,7 @@ jobs:
             for pkg in pkg/*/ ; do
                 [ "$pkg" = "pkg/kernel/" ] && continue
                 echo "Building $pkg"
-                run-if-changed -d "$pkg" -- docker exec -e PKG="$pkg" -t -i linuxkit-cli /bin/sh -eu -c '
+                docker exec -e PKG="$pkg" -t -i linuxkit-cli /bin/sh -eu -c '
                   linuxkit pkg build -disable-content-trust "$PKG"
                   if [ "$CIRCLE_BRANCH" = "master" ] ; then
                     docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD"
@@ -55,10 +51,6 @@ jobs:
                 '
             done
           no_output_timeout: 60m
-      - save_cache:
-          key: run-if-changed-{{ .Branch }}-{{ .BuildNum }}
-          paths:
-            - ".cache/run-if-changed"
       - run: docker save -o /tmp/images.tar $(docker images -q | xargs -n 1 docker history -q | grep -v '<missing>')
       - save_cache:
           key: v1-docker-layer-cache-{{ .BuildNum }}
