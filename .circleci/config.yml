@@ -53,7 +53,7 @@ jobs:
                   fi
                 '
             done
-          no_output_timeout: 30m
+          no_output_timeout: 60m
       - save_cache:
           key: run-if-changed-{{ .Branch }}-{{ .BuildNum }}
           paths:
