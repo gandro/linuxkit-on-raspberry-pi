@@ -44,6 +44,7 @@ jobs:
 
             docker cp -a . linuxkit-cli:/workspace
             for pkg in pkg/*/ ; do
+                [ "$pkg" = "pkg/kernel/" ] && continue
                 echo "Building $pkg"
                 run-if-changed -d "$pkg" -- docker exec -e PKG="$pkg" -t -i linuxkit-cli /bin/sh -eu -c '
                   linuxkit pkg build -disable-content-trust "$PKG"
