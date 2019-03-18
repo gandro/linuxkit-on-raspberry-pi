@@ -31,7 +31,7 @@ jobs:
           command: |
             docker run --name linuxkit-cli \
               -e CIRCLE_BRANCH -e DOCKER_HOST -e DOCKER_LOGIN -e DOCKER_PASSWORD \
-              -v /workspace -w /workspace -t -i -d \
+              --network host -v /workspace -w /workspace -t -i -d \
               linuxkitrpi/linuxkit-cli cat
 
             docker cp -a . linuxkit-cli:/workspace
