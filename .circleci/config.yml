@@ -58,8 +58,7 @@ jobs:
           key: run-if-changed-{{ .Branch }}-{{ .BuildNum }}
           paths:
             - ".cache/run-if-changed"
-      - run:
-        command: docker save -o /tmp/images.tar $(docker images -q | xargs -n 1 docker history -q | grep -v '<missing>')
+      - run: docker save -o /tmp/images.tar $(docker images -q | xargs -n 1 docker history -q | grep -v '<missing>')
       - save_cache:
           key: v1-docker-layer-cache-{{ .BuildNum }}
           paths:
