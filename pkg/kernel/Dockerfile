@@ -41,8 +41,8 @@ ENV WIREGUARD_URL=https://git.zx2c4.com/WireGuard/snapshot/WireGuard-${WIREGUARD
 # Fetch source
 WORKDIR /linux
 RUN curl -fsSL -o /linux.tar.gz "${KERNEL_URL}" && \
-    echo "${KERNEL_SHA256}  /linux.tar.xz" | sha256sum -c - && \
-    tar --strip-components=1 -xzf /linux.tar.xz
+    echo "${KERNEL_SHA256}  /linux.tar.gz" | sha256sum -c - && \
+    tar --strip-components=1 -xzf /linux.tar.gz
 
 # Apply local common patches if present
 COPY patches /patches
