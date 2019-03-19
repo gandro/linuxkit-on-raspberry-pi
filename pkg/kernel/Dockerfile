@@ -31,7 +31,8 @@ RUN apk add \
     zlib-dev
 
 ENV KERNEL_COMMIT=3667ae0605bfbed9e25bd48365457632cf660d78
-ENV KERNEL_SOURCE=https://github.com/raspberrypi/linux/archive/${KERNEL_COMMIT}.tar.gz
+ENV KERNEL_SHA256="b868127a4e8a38d5f9433ddfb7628078a98ffacb042b545e93984f3460d17c8e"
+ENV KERNEL_URL=https://github.com/raspberrypi/linux/archive/${KERNEL_COMMIT}.tar.gz
 
 ENV WIREGUARD_VERSION=0.0.20190227
 ENV WIREGUARD_SHA256="fcdb26fd2692d9e1dee54d14418603c38fbb973a06ce89d08fbe45292ff37f79"
@@ -39,8 +40,9 @@ ENV WIREGUARD_URL=https://git.zx2c4.com/WireGuard/snapshot/WireGuard-${WIREGUARD
 
 # Fetch source
 WORKDIR /linux
-RUN curl -fsSL "${KERNEL_SOURCE}" | \
-    tar --strip-components=1 -xz
+RUN curl -fsSL -o /linux.tar.gz "${KERNEL_URL}" && \
+    echo "${KERNEL_SHA256}  /linux.tar.xz" | sha256sum -c - && \
+    tar --strip-components=1 -xzf /linux.tar.xz
 
 # Apply local common patches if present
 COPY patches /patches
@@ -139,10 +141,7 @@ RUN ./scripts/config --file arch/arm64/configs/bcmrpi3_defconfig \
     --enable CONFIG_DM_THIN_PROVISIONING \
     --enable CONFIG_OVERLAY_FS
 
-RUN mkdir -p /out/src
-
-# Save kernel source
-RUN tar cJf /out/src/linux.tar.xz /linux
+RUN mkdir -p /out/
 
 # Kernel config
 RUN make bcmrpi3_defconfig
@@ -155,7 +154,6 @@ RUN make -j "$(getconf _NPROCESSORS_ONLN)" KCFLAGS="-fno-pie" && \
 # WireGuard
 RUN curl -fsSL -o /wireguard.tar.xz "${WIREGUARD_URL}" && \
     echo "${WIREGUARD_SHA256}  /wireguard.tar.xz" | sha256sum -c - && \
-    cp /wireguard.tar.xz /out/src/ && \
     tar -C / --one-top-level=wireguard --strip-components=2 -xJf /wireguard.tar.xz "WireGuard-${WIREGUARD_VERSION}/src" && \
     make -j "$(getconf _NPROCESSORS_ONLN)" M="/wireguard" modules
 
@@ -189,7 +187,7 @@ RUN DVER=$(basename $(find /tmp/kernel-modules/lib/modules/ -mindepth 1 -maxdept
          tar cf - -T - | (cd $dir; tar xf -) && \
     ( cd /tmp && tar cf /out/kernel-dev.tar usr/src )
 
-RUN printf "KERNEL_SOURCE=${KERNEL_SOURCE}\n" > /out/kernel-source-info
+RUN printf "KERNEL_SOURCE=${KERNEL_URL}\n" > /out/kernel-source-info
 
 FROM scratch
 ENTRYPOINT []
