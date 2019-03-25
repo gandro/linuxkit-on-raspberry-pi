@@ -38,6 +38,18 @@ ENV WIREGUARD_VERSION=0.0.20190227
 ENV WIREGUARD_SHA256="fcdb26fd2692d9e1dee54d14418603c38fbb973a06ce89d08fbe45292ff37f79"
 ENV WIREGUARD_URL=https://git.zx2c4.com/WireGuard/snapshot/WireGuard-${WIREGUARD_VERSION}.tar.xz
 
+ARG AARCH64_CROSS_COMPILE
+ENV AARCH64_CROSS_GCC_VERSION=8.3.0
+ENV AARCH64_CROSS_GCC_TARGET=linux-musl
+
+# Install AArch64 toolchain for cross-compilation
+ENV ARCH=${AARCH64_CROSS_COMPILE:+arm64}
+ENV CROSS_COMPILE=${AARCH64_CROSS_COMPILE:+aarch64-${AARCH64_CROSS_GCC_TARGET}-}
+RUN if [ -n "${AARCH64_CROSS_COMPILE}" ]; then \
+         curl -fsSL "https://more.musl.cc/${AARCH64_CROSS_GCC_VERSION}/$(uname -m)-linux-musl/${CROSS_COMPILE}cross.tgz" | \
+         tar -C /usr/local --strip-components=2 --warning=no-unknown-keyword -xz \
+    ; fi
+
 # Fetch source
 WORKDIR /linux
 RUN curl -fsSL -o /linux.tar.gz "${KERNEL_URL}" && \
