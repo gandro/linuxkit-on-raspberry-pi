@@ -28,3 +28,5 @@ COPY --from=builder /go/src/github.com/linuxkit/linuxkit/scripts/cleanup-older-i
 COPY --from=builder /go/src/github.com/linuxkit/linuxkit/bin/linuxkit /usr/local/bin/
 COPY --from=builder /go/src/github.com/estesp/manifest-tool/manifest-tool /usr/local/bin/
 COPY --from=builder /go/src/github.com/theupdateframework/notary/bin/static/notary /usr/local/bin
+
+CMD ["linuxkit"]
