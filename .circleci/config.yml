@@ -29,7 +29,7 @@ jobs:
           name: Save Kernel Image Tarball
           command: |
             TAG="$(linuxkit pkg show-tag pkg/kernel)-amd64"
-            IMAGES=$(docker history "$TAG" | grep -v '<missing>')
+            IMAGES=$(docker history -q "$TAG" | grep -v '<missing>')
             mkdir -p /run/images/
             docker save -o /run/images/kernel.tar $IMAGES
       - save_cache:
