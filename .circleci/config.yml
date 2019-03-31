@@ -1,26 +1,71 @@
 version: 2.1
 
 jobs:
-  build:
+  build_kernel:
     docker:
       - image: linuxkitrpi/linuxkit-cli
     steps:
       - checkout
       - setup_remote_docker
+      - restore_cache:
+          keys:
+            - v1-images-kernel
       - run:
-          name: Build (cross-compile) and push pkg/kernel
+          name: Restore Images from Cache
+          command: docker load -i /run/images/kernel.tar || true
+      - run:
+          name: Cross-Compile RaspberryPi Kernel
           command: |
             # cross compile kernel
-            IMAGE=$(linuxkit pkg show-tag pkg/kernel)
-            docker build -t "${IMAGE}-arm64" --build-arg "AARCH64_CROSS_COMPILE=1" pkg/kernel
+            TAG="$(linuxkit pkg show-tag pkg/kernel)-amd64"
+            docker build -t "$TAG" --build-arg "AARCH64_CROSS_COMPILE=1" pkg/kernel
             # hack manifest arch from amd64 to arm64
             LAYERS=$(mktemp -d "${TMPDIR:-/tmp}/layers.XXXXXXXXX")
-            docker save "${IMAGE}-arm64" | tar -C "$LAYERS" -x
+            docker save "$TAG" | tar -C "$LAYERS" -x
             find "$LAYERS" -type f \( -name 'json' -o -name '*.json' \) \
                 -exec sed -i 's|\("architecture"\s*:\s*\)"amd64"|\1"arm64"|g' '{}' \;
             tar -C "$LAYERS" -c . | docker load
-            # push manifest and image
-            if [ "$CIRCLE_BRANCH" = "master" ] ; then
-              docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD"
-              linuxkit pkg push -disable-content-trust pkg/kernel
-            fi
+      - run:
+          name: Save Kernel Image Tarball
+          command: |
+            TAG="$(linuxkit pkg show-tag pkg/kernel)-amd64"
+            IMAGES=$(docker history "$TAG" | grep -v '<missing>')
+            mkdir -p /run/images/
+            docker save -o /run/images/kernel.tar $IMAGES
+      - save_cache:
+          key: v1-images-kernel-{{ .BuildNum }}
+          paths:
+            - /run/images/kernel.tar
+          when: always
+      - persist_to_workspace:
+          root: /run/images
+          paths:
+            - kernel.tar
+  push:
+    docker:
+      - image: linuxkitrpi/linuxkit-cli
+    steps:
+      - checkout
+      - setup_remote_docker
+      - attach_workspace:
+          at: /run/images
+      - run:
+          name: Restore Images from Workspace
+          command: find /run/images -type f -name '*.tar' -exec docker load -i '{}' \;
+      - run:
+          name: Log in to Docker
+          command: docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD"
+      - run:
+          name: Pushing Images
+          command: |
+            TAG="$(linuxkit pkg show-tag pkg/kernel)-amd64"
+            push-manifest.sh "$TAG"
+
+workflows:
+  version: 2
+  build_and_push:
+    jobs:
+      - build_kernel
+      - push:
+          requires:
+            - build_kernel
