@@ -1,5 +1,16 @@
 version: 2.1
 
+executors:
+  linuxkit_cli:
+    docker:
+      - image: linuxkitrpi/linuxkit-cli
+  dockerd_arm64:
+    docker:
+      - image: linuxkitrpi/linuxkit-cli
+        environment:
+          DOCKER_HOST: localhost:2375
+      - image: linuxkitrpi/dockerd-arm64
+
 commands:
   wait_for_docker:
     steps:
@@ -49,39 +60,49 @@ commands:
           no_output_timeout: 15m
 
 jobs:
-  build_cli_arm64:
-    docker:
-      - image: linuxkitrpi/linuxkit-cli
-        environment:
-          DOCKER_HOST: localhost:2375
-      - image: linuxkitrpi/dockerd-arm64
+  build_cli:
+    parameters:
+      arch:
+        type: enum
+        default: amd64
+        enum: ["amd64", "arm64"]
+      tag:
+        type: string
+        default: $(date "+%Y%m%d")
+      executor:
+        type: executor
+        default: linuxkit_cli
+      setup_remote_docker:
+        type: boolean
+        default: true
+    executor: << parameters.executor >>
     steps:
       - checkout
+      - when:
+          condition: << parameters.setup_remote_docker >>
+          steps:
+            - setup_remote_docker
       - wait_for_docker
       - restore_docker_cache:
-          key: v1-images-cli-arm64
+          key: v1-images-cli-<< parameters.arch >>
       - run:
           name: Build tools/linuxkit-cli
           command: |
-            TAG="linuxkitrpi/linuxkit-cli:$(date "+%Y%m%d")-arm64"
+            TAG="linuxkitrpi/linuxkit-cli:<< parameters.tag >>-<< parameters.arch >>"
             # build linuxkit-cli image
             docker build -t "$TAG" tools/linuxkit-cli | tee -a build.log
             # save for push stage
             mkdir -p /run/images
-            docker save -o /run/images/linuxkit-cli-arm64.tar "$TAG"
+            docker save -o /run/images/linuxkit-cli-<< parameters.arch >>.tar "$TAG"
           no_output_timeout: 30m
       - persist_to_workspace:
           root: /run/images
           paths:
-            - linuxkit-cli-arm64.tar
+            - linuxkit-cli-<< parameters.arch >>.tar
       - save_docker_cache:
-          key: v1-images-cli-arm64-{{ .BuildNum }}
+          key: v1-images-cli-<< parameters.arch >>-{{ .BuildNum }}
   build_pkgs:
-    docker:
-      - image: linuxkitrpi/linuxkit-cli
-        environment:
-          DOCKER_HOST: localhost:2375
-      - image: linuxkitrpi/dockerd-arm64
+    executor: dockerd_arm64
     steps:
       - checkout
       - wait_for_docker
@@ -104,8 +125,7 @@ jobs:
           key: v1-images-pkg-{{ .BuildNum }}
 
   build_kernel:
-    docker:
-      - image: linuxkitrpi/linuxkit-cli
+    executor: linuxkit_cli
     steps:
       - checkout
       - setup_remote_docker
@@ -133,8 +153,7 @@ jobs:
       - save_docker_cache:
           key: v1-images-kernel-{{ .BuildNum }}
   push:
-    docker:
-      - image: linuxkitrpi/linuxkit-cli
+    executor: linuxkit_cli
     steps:
       - checkout
       - setup_remote_docker
@@ -157,6 +176,7 @@ jobs:
             # push multiarch manifests
             TARGETS=$(printf '%s' "$TAGS" | sed -n -r 's/(.*)-(amd64|arm64)/\1/p')
             for target in $TARGETS ; do
+
               push-manifest.sh "$target"
             done
 
@@ -164,11 +184,18 @@ workflows:
   version: 2
   build_and_push:
     jobs:
-      - build_cli_arm64
+      - build_cli:
+          name: build_cli_amd64
+      - build_cli:
+          name: build_cli_arm64
+          arch: arm64
+          executor: dockerd_arm64
+          setup_remote_docker: false
       - build_kernel
       #- build_pkgs
       - push:
           requires:
             - build_kernel
+            - build_cli_amd64
             - build_cli_arm64
             #- build_pkgs
