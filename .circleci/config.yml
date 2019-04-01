@@ -61,9 +61,18 @@ jobs:
       - run:
           name: Build tools/linuxkit-cli
           command: |
+            TAG="linuxkitrpi/linuxkit-cli:$(date "+%Y%m%d")-arm64"
+            # build linuxkit-cli image
             cd tools/linuxkit-cli
-            docker build -t linuxkitrpi/linuxkit-cli:$(date "+%Y%m%d")-arm64 . | tee -a build.log
+            docker build -t "$TAG" . | tee -a build.log
+            # save for push stage
+            mkdir -p /run/images
+            docker save -o /run/images/linuxkit-cli-arm64.tar "$TAG"
           no_output_timeout: 30m
+      - persist_to_workspace:
+          root: /run/images
+          paths:
+            - linuxkit-cli-arm64.tar
       - save_docker_cache:
           key: v1-images-cli-arm64-{{ .BuildNum }}
   build_pkgs:
@@ -104,23 +113,18 @@ jobs:
       - run:
           name: Cross-Compile RaspberryPi Kernel
           command: |
+            TAG="$(linuxkit pkg show-tag pkg/kernel)-arm64"
             # cross compile kernel
-            docker build -t rpi-kernel --build-arg "AARCH64_CROSS_COMPILE=1" pkg/kernel | tee -a build.log
+            docker build -t "$TAG" --build-arg "AARCH64_CROSS_COMPILE=1" pkg/kernel | tee -a build.log
             # fix manifest architecture
             LAYERS=$(mktemp -d "${TMPDIR:-/tmp}/layers.XXXXXXXXX")
-            docker save rpi-kernel | tar -C "$LAYERS" -x
+            docker save "$TAG" | tar -C "$LAYERS" -x
             find "$LAYERS" -type f \( -name 'json' -o -name '*.json' \) \
                 -exec sed -i 's|\("architecture"\s*:\s*\)"amd64"|\1"arm64"|g' '{}' \;
             tar -C "$LAYERS" -c . | docker load
-      - run:
-          name: Tag and Save Kernel Image for Push Stage
-          command: |
-            TAG="$(linuxkit pkg show-tag pkg/kernel)"
-            docker tag rpi-kernel "${TAG}"
-            docker tag rpi-kernel "${TAG}-arm64"
-
+            # save for push stage
             mkdir -p /run/images
-            docker save -o /run/images/kernel.tar "${TAG}" "${TAG}-arm64"
+            docker save -o /run/images/kernel.tar "${TAG}"
       - persist_to_workspace:
           root: /run/images
           paths:
@@ -144,9 +148,16 @@ jobs:
       - run:
           name: Pushing Images
           command: |
-            PKG="$(linuxkit pkg show-tag pkg/kernel)"
-            docker push "${PKG}-arm64"
-            push-manifest.sh "$PKG"
+            # push all locally available images
+            TAGS=$(docker images --filter 'reference=linuxkitrpi/*' --format '{{.Repository}}:{{.Tag}}')
+            for tag in $TAGS ; do
+              docker push "$tag"
+            done
+            # push multiarch manifests
+            TARGETS=$(printf '%s' "$TAGS" | sed -n -r 's/(.*)-(amd64|arm64)/\1/p')
+            for target in $TARGETS ; do
+              push-manifest.sh "$target"
+            done
 
 workflows:
   version: 2
