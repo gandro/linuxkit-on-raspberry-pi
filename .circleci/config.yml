@@ -12,7 +12,7 @@ jobs:
             - v1-images-kernel
       - run:
           name: Restore Layers from Cache
-          command: find /var/cache/layers -type f -name '*.tar' -exec docker load -i '{}' \;
+          command: docker load -i /var/cache/layers/build.tar || true
       - run:
           name: Cross-Compile RaspberryPi Kernel
           command: |
@@ -38,13 +38,15 @@ jobs:
       - run:
           name: Save Layers to Cache
           command: |
-            mkdir -p /var/cache/layers
-            for layer in $(sed -n 's/^ ---> \([[:xdigit:]]\+\)$/\1/p' build.log) ; do
-              if [ "$(docker inspect --format '{{.Size}}' $layer)" -gt 0 ] ; then
-                echo "Caching layer $layer"
-                docker save -o "/var/cache/layers/${layer}.tar" "$layer"
+            IMAGES=""
+            for i in $(sed -n 's/^ ---> \([[:xdigit:]]\+\)$/\1/p' build.log) ; do
+              if [ "$(docker inspect --format '{{.Size}}' "$i")" -gt 0 ] ; then
+                IMAGES="$IMAGES $i"
               fi
             done
+
+            mkdir -p /var/cache/layers
+            docker save -o "/var/cache/layers/build.tar" "$IMAGES"
       - save_cache:
           key: v1-images-kernel-{{ .BuildNum }}
           paths:
