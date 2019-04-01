@@ -117,7 +117,7 @@ jobs:
             docker cp -a . linuxkit-cli:/workspace
             # build each package separately
             for pkg in $PKGS; do
-              docker exec -t linuxkit-cli linuxkit pkg build -disable-content-trust "$pkg" | tee -a build.log
+              docker exec -t linuxkit-cli linuxkit pkg build -disable-content-trust "pkg/${pkg}" | tee -a build.log
             done
           no_output_timeout: 30m
       - save_docker_cache:
