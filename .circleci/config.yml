@@ -186,7 +186,6 @@ jobs:
             # push multiarch manifests
             TARGETS=$(printf '%s' "$TAGS" | sed -n -r 's/(.*)-(amd64|arm64)/\1/p')
             for target in $TARGETS ; do
-
               push-manifest.sh "$target"
             done
 
