@@ -17,20 +17,22 @@ jobs:
           name: Cross-Compile RaspberryPi Kernel
           command: |
             # cross compile kernel
-            TAG="$(linuxkit pkg show-tag pkg/kernel)-amd64"
-            docker build -t "$TAG" --build-arg "AARCH64_CROSS_COMPILE=1" pkg/kernel | tee -a build.log
+            docker build -t rpi-kernel --build-arg "AARCH64_CROSS_COMPILE=1" pkg/kernel | tee -a build.log
             # fix manifest architecture
             LAYERS=$(mktemp -d "${TMPDIR:-/tmp}/layers.XXXXXXXXX")
-            docker save "$TAG" | tar -C "$LAYERS" -x
+            docker save rpi-kernel | tar -C "$LAYERS" -x
             find "$LAYERS" -type f \( -name 'json' -o -name '*.json' \) \
                 -exec sed -i 's|\("architecture"\s*:\s*\)"amd64"|\1"arm64"|g' '{}' \;
             tar -C "$LAYERS" -c . | docker load
       - run:
-          name: Save Image for Push Stage
+          name: Tag and Save Kernel Image for Push Stage
           command: |
-            TAG="$(linuxkit pkg show-tag pkg/kernel)-amd64"
+            TAG="$(linuxkit pkg show-tag pkg/kernel)"
+            docker tag rpi-kernel "${TAG}"
+            docker tag rpi-kernel "${TAG}-arm64"
+
             mkdir -p /run/images
-            docker save -o /run/images/kernel.tar "$TAG"
+            docker save -o /run/images/kernel.tar "${TAG}" "${TAG}-arm64"
       - persist_to_workspace:
           root: /run/images
           paths:
