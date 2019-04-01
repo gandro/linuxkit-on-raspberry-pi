@@ -1,4 +1,4 @@
-FROM linuxkit/alpine:9f00542b8b74b7815936affb11dedb86945fe4ac AS build
+FROM linuxkit/alpine:6ed32ba2b29a12b3d75f3d5b9be1b4ac00e7d479 AS build
 RUN apk add --no-cache git
 
 ENV REGDB_URL=https://kernel.googlesource.com/pub/scm/linux/kernel/git/sforshee/wireless-regdb
