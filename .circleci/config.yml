@@ -4,7 +4,7 @@ commands:
   wait_for_docker:
     steps:
       - run:
-        name: Wait for dockerd to come up
+          name: Wait for dockerd to come up
           command: |
             DOCKER_API="http://${DOCKER_HOST}/v1.39/info"
             until wget -q --spider "$DOCKER_API" 2>/dev/null ; do
