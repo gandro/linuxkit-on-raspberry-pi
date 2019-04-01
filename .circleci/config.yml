@@ -68,8 +68,8 @@ jobs:
       - run:
           name: Pushing Images
           command: |
-            TAG="$(linuxkit pkg show-tag pkg/kernel)-amd64"
-            push-manifest.sh "$TAG"
+            PKG="$(linuxkit pkg show-tag pkg/kernel)"
+            push-manifest.sh "$PKG"
 
 workflows:
   version: 2
