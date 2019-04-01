@@ -11,36 +11,40 @@ jobs:
           keys:
             - v1-images-kernel
       - run:
-          name: Restore Images from Cache
-          command: docker load -i /run/images/kernel.tar || true
+          name: Restore Layers from Cache
+          command: docker load -i /var/cache/images/build-layers.tar || true
       - run:
           name: Cross-Compile RaspberryPi Kernel
           command: |
             # cross compile kernel
             TAG="$(linuxkit pkg show-tag pkg/kernel)-amd64"
-            docker build -t "$TAG" --build-arg "AARCH64_CROSS_COMPILE=1" pkg/kernel
-            # hack manifest arch from amd64 to arm64
+            docker build -t "$TAG" --build-arg "AARCH64_CROSS_COMPILE=1" pkg/kernel | tee -a build.log
+            # fix manifest architecture
             LAYERS=$(mktemp -d "${TMPDIR:-/tmp}/layers.XXXXXXXXX")
             docker save "$TAG" | tar -C "$LAYERS" -x
             find "$LAYERS" -type f \( -name 'json' -o -name '*.json' \) \
                 -exec sed -i 's|\("architecture"\s*:\s*\)"amd64"|\1"arm64"|g' '{}' \;
             tar -C "$LAYERS" -c . | docker load
       - run:
-          name: Save Kernel Image Tarball
+          name: Save Image for Push Stage
           command: |
             TAG="$(linuxkit pkg show-tag pkg/kernel)-amd64"
-            IMAGES=$(docker history -q "$TAG" | grep -v '<missing>')
-            mkdir -p /run/images/
-            docker save -o /run/images/kernel.tar $IMAGES
-      - save_cache:
-          key: v1-images-kernel-{{ .BuildNum }}
-          paths:
-            - /run/images/kernel.tar
-          when: always
+            mkdir -p /run/images
+            docker save -o /run/images/kernel.tar "$TAG"
       - persist_to_workspace:
           root: /run/images
           paths:
             - kernel.tar
+      - run:
+          name: Save Layers to Cache
+          command: |
+            IMAGES=$(sed -n 's/^ ---> \([[:xdigit:]]\+\)$/\1/p' build.log)
+            mkdir -p /var/cache/images
+            docker save -o /var/cache/images/build-layers.tar $IMAGES
+      - save_cache:
+          key: v1-images-kernel-{{ .BuildNum }}
+          paths:
+            - /var/cache/images/build-layers.tar
   push:
     docker:
       - image: linuxkitrpi/linuxkit-cli
