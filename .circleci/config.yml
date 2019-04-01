@@ -1,47 +1,27 @@
 version: 2.1
 
-jobs:
-  build_pkgs:
-    docker:
-      - image: linuxkitrpi/linuxkit-cli
-        environment:
-          DOCKER_HOST: localhost:2375
-      - image: linuxkitrpi/dockerd-arm64
+commands:
+  wait_for_docker:
     steps:
-      - checkout
-      - run:
-          name: Wait for dockerd-arm64 to come up
-          command: |
-            DOCKER_API="http://${DOCKER_HOST}/v1.39/info"
-            until wget -q --spider "$DOCKER_API" 2>/dev/null ; do
-              sleep 1
-            done
-      - restore_cache:
-          keys:
-            - v1-images-pkg
-      - run:
-          name: Restore Layers from Cache
-          command: docker load -i /var/cache/layers/build.tar || true
-      - run:
-          command: |
-            # packages to build on arm64
-            PKGS="chrony firmware wireless-regdb wpa_supplicant"
-
-            # spawn a background container for running the linuxkit-cli on arm64
-            docker run -t -i -d -e DOCKER_HOST -v /workspace -w /workspace \
-              --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli cat
-            docker cp -a . linuxkit-cli:/workspace
-
-            # build each package separately
-            for pkg in $PKGS; do
-              docker exec -t linuxkit-cli linuxkit pkg build -disable-content-trust "$pkg" | tee -a build.log
-            done
-          no_output_timeout: 30m
+      name: Wait for dockerd to come up
+      command: |
+        DOCKER_API="http://${DOCKER_HOST}/v1.39/info"
+        until wget -q --spider "$DOCKER_API" 2>/dev/null ; do
+          sleep 1
+        done
+  save_docker_cache:
+    parameters:
+      build_log:
+        type: string
+        default: "build.log"
+      key:
+        type: string
+    steps:
       - run:
           name: Save Layers to Cache
           command: |
             IMAGES=""
-            for i in $(sed -n 's/^ ---> \([[:xdigit:]]\+\)$/\1/p' build.log) ; do
+            for i in $(sed -n 's/^ ---> \([[:xdigit:]]\+\)$/\1/p' << parameters.build_log >>) ; do
               if [ "$(docker inspect --format '{{.Size}}' "$i")" -gt 0 ] ; then
                 IMAGES="$IMAGES $i"
               fi
@@ -50,9 +30,67 @@ jobs:
             mkdir -p /var/cache/layers
             docker save -o "/var/cache/layers/build.tar" $IMAGES
       - save_cache:
-          key: v1-images-pkgs-{{ .BuildNum }}
+          key: << parameters.key >>
           paths:
             - /var/cache/layers
+  restore_docker_cache:
+    parameters:
+      key:
+        type: string
+    steps:
+      - restore_cache:
+          keys:
+            - << parameters.key >>
+      - run:
+          name: Restore Layers from Cache
+          command: docker load -i /var/cache/layers/build.tar || true
+
+jobs:
+  build_cli_arm64:
+    docker:
+      - image: linuxkitrpi/linuxkit-cli
+        environment:
+          DOCKER_HOST: localhost:2375
+      - image: linuxkitrpi/dockerd-arm64
+    steps:
+      - checkout
+      - wait_for_docker
+      - restore_docker_cache:
+          key: v1-images-cli-arm64
+      - run:
+          name: Build tools/linuxkit-cli
+          command: |
+            cd tools/linuxkit-cli
+            docker build -t linuxkitrpi/linuxkit-cli:$(date "+%Y%m%d")-arm64 . | tee -a build.log
+          no_output_timeout: 30m
+      - save_docker_cache:
+          key: v1-images-cli-arm64-{{ .BuildNum }}
+  build_pkgs:
+    docker:
+      - image: linuxkitrpi/linuxkit-cli
+        environment:
+          DOCKER_HOST: localhost:2375
+      - image: linuxkitrpi/dockerd-arm64
+    steps:
+      - checkout
+      - wait_for_docker
+      - restore_docker_cache:
+          key: v1-images-pkg
+      - run:
+          command: |
+            # packages to build on arm64
+            PKGS="chrony firmware wireless-regdb wpa_supplicant"
+            # spawn a background container for running the linuxkit-cli on arm64
+            docker run -t -i -d -e DOCKER_HOST -v /workspace -w /workspace \
+              --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli cat
+            docker cp -a . linuxkit-cli:/workspace
+            # build each package separately
+            for pkg in $PKGS; do
+              docker exec -t linuxkit-cli linuxkit pkg build -disable-content-trust "$pkg" | tee -a build.log
+            done
+          no_output_timeout: 30m
+      - save_docker_cache:
+          key: v1-images-pkg-{{ .BuildNum }}
 
   build_kernel:
     docker:
@@ -60,12 +98,8 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - restore_cache:
-          keys:
-            - v1-images-kernel
-      - run:
-          name: Restore Layers from Cache
-          command: docker load -i /var/cache/layers/build.tar || true
+      - restore_docker_cache:
+          key: v1-images-kernel
       - run:
           name: Cross-Compile RaspberryPi Kernel
           command: |
@@ -90,22 +124,8 @@ jobs:
           root: /run/images
           paths:
             - kernel.tar
-      - run:
-          name: Save Layers to Cache
-          command: |
-            IMAGES=""
-            for i in $(sed -n 's/^ ---> \([[:xdigit:]]\+\)$/\1/p' build.log) ; do
-              if [ "$(docker inspect --format '{{.Size}}' "$i")" -gt 0 ] ; then
-                IMAGES="$IMAGES $i"
-              fi
-            done
-
-            mkdir -p /var/cache/layers
-            docker save -o "/var/cache/layers/build.tar" $IMAGES
-      - save_cache:
+      - save_docker_cache:
           key: v1-images-kernel-{{ .BuildNum }}
-          paths:
-            - /var/cache/layers
   push:
     docker:
       - image: linuxkitrpi/linuxkit-cli
@@ -131,6 +151,7 @@ workflows:
   version: 2
   build_and_push:
     jobs:
+      - build_cli_arm64
       - build_kernel
       - build_pkgs
       - push:
