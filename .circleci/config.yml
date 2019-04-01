@@ -120,7 +120,7 @@ jobs:
             docker cp -a . linuxkit-cli:/workspace
             # build each package separately
             for pkg in $PKGS; do
-              TAG=$(linuxkit pkg show-tag "pkg/${pkg}")-arm64"
+              TAG="$(linuxkit pkg show-tag "pkg/${pkg}")-arm64"
               # build package
               docker exec -t linuxkit-cli linuxkit pkg build -disable-content-trust "pkg/${pkg}" | tee -a build.log
               # save for push stage
