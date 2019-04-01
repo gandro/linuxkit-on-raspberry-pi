@@ -71,6 +71,7 @@ jobs:
           name: Pushing Images
           command: |
             PKG="$(linuxkit pkg show-tag pkg/kernel)"
+            docker push "${PKG}-arm64"
             push-manifest.sh "$PKG"
 
 workflows:
