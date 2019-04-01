@@ -17,8 +17,7 @@ commands:
       - run:
           name: Wait for dockerd to come up
           command: |
-            DOCKER_API="http://${DOCKER_HOST}/v1.39/info"
-            until wget -q --spider "$DOCKER_API" 2>/dev/null ; do
+            while [ -z "$(docker version --format '{{.Server.Version}}' 2>/dev/null)" ] ; do
               sleep 1
             done
   save_docker_cache:
