@@ -38,8 +38,10 @@ commands:
               fi
             done
 
-            mkdir -p /var/cache/layers
-            docker save -o "/var/cache/layers/build.tar" $IMAGES
+            if [ -n "$IMAGES" ] ; then
+              mkdir -p /var/cache/layers
+              docker save -o "/var/cache/layers/build.tar" $IMAGES
+            fi
           no_output_timeout: 15m
       - save_cache:
           key: << parameters.key >>
