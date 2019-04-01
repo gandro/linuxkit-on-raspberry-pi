@@ -63,8 +63,7 @@ jobs:
           command: |
             TAG="linuxkitrpi/linuxkit-cli:$(date "+%Y%m%d")-arm64"
             # build linuxkit-cli image
-            cd tools/linuxkit-cli
-            docker build -t "$TAG" . | tee -a build.log
+            docker build -t "$TAG" tools/linuxkit-cli | tee -a build.log
             # save for push stage
             mkdir -p /run/images
             docker save -o /run/images/linuxkit-cli-arm64.tar "$TAG"
