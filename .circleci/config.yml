@@ -46,7 +46,7 @@ jobs:
             done
 
             mkdir -p /var/cache/layers
-            docker save -o "/var/cache/layers/build.tar" "$IMAGES"
+            docker save -o "/var/cache/layers/build.tar" $IMAGES
       - save_cache:
           key: v1-images-kernel-{{ .BuildNum }}
           paths:
