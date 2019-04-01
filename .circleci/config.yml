@@ -30,6 +30,7 @@ commands:
 
             mkdir -p /var/cache/layers
             docker save -o "/var/cache/layers/build.tar" $IMAGES
+          no_output_timeout: 15m
       - save_cache:
           key: << parameters.key >>
           paths:
@@ -45,6 +46,7 @@ commands:
       - run:
           name: Restore Layers from Cache
           command: docker load -i /var/cache/layers/build.tar || true
+          no_output_timeout: 15m
 
 jobs:
   build_cli_arm64:
@@ -164,8 +166,9 @@ workflows:
     jobs:
       - build_cli_arm64
       - build_kernel
-      - build_pkgs
+      #- build_pkgs
       - push:
           requires:
             - build_kernel
-            - build_pkgs
+            - build_cli_arm64
+            #- build_pkgs
