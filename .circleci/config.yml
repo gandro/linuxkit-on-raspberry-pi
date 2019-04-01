@@ -130,7 +130,7 @@ jobs:
       - persist_to_workspace:
           root: /run/images
           paths:
-            - *.tar
+            - "*.tar"
       - save_docker_cache:
           key: v1-images-pkg-{{ .BuildNum }}
 
