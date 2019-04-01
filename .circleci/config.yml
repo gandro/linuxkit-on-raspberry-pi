@@ -1,12 +1,12 @@
 version: 2.1
 
 executors:
-  linuxkit_cli:
+  native:
     docker:
-      - image: linuxkitrpi/linuxkit-cli
+      - image: linuxkitrpi/linuxkit-cli:20190401
   dockerd_arm64:
     docker:
-      - image: linuxkitrpi/linuxkit-cli
+      - image: linuxkitrpi/linuxkit-cli:20190401
         environment:
           DOCKER_HOST: localhost:2375
       - image: linuxkitrpi/dockerd-arm64
@@ -70,7 +70,7 @@ jobs:
         default: $(date "+%Y%m%d")
       executor:
         type: executor
-        default: linuxkit_cli
+        default: native
       setup_remote_docker:
         type: boolean
         default: true
@@ -113,7 +113,7 @@ jobs:
             PKGS="chrony firmware wireless-regdb wpa_supplicant"
             # spawn a background container for running the linuxkit-cli on arm64
             docker run -t -i -d -e DOCKER_HOST -v /workspace -w /workspace \
-              --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli cat
+              --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli:20190401 cat
             docker cp -a . linuxkit-cli:/workspace
             # build each package separately
             for pkg in $PKGS; do
@@ -124,7 +124,7 @@ jobs:
           key: v1-images-pkg-{{ .BuildNum }}
 
   build_kernel:
-    executor: linuxkit_cli
+    executor: native
     steps:
       - checkout
       - setup_remote_docker
@@ -152,7 +152,7 @@ jobs:
       - save_docker_cache:
           key: v1-images-kernel-{{ .BuildNum }}
   push:
-    executor: linuxkit_cli
+    executor: native
     steps:
       - checkout
       - setup_remote_docker
@@ -191,10 +191,14 @@ workflows:
           executor: dockerd_arm64
           setup_remote_docker: false
       - build_kernel
-      #- build_pkgs
+      - build_pkgs
       - push:
+          context: dockerhub-creds
           requires:
             - build_kernel
             - build_cli_amd64
             - build_cli_arm64
-            #- build_pkgs
+            - build_pkgs
+          filters:
+            branches:
+              only: master
