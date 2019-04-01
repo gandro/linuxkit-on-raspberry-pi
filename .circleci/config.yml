@@ -3,13 +3,14 @@ version: 2.1
 commands:
   wait_for_docker:
     steps:
-      name: Wait for dockerd to come up
-      command: |
-        DOCKER_API="http://${DOCKER_HOST}/v1.39/info"
-        until wget -q --spider "$DOCKER_API" 2>/dev/null ; do
-          sleep 1
-        done
-  save_docker_cache:
+      - run:
+        name: Wait for dockerd to come up
+          command: |
+            DOCKER_API="http://${DOCKER_HOST}/v1.39/info"
+            until wget -q --spider "$DOCKER_API" 2>/dev/null ; do
+              sleep 1
+            done
+    save_docker_cache:
     parameters:
       build_log:
         type: string
