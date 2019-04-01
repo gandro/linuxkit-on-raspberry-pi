@@ -119,6 +119,7 @@ jobs:
               --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli:20190401 cat
             docker cp -a . linuxkit-cli:/workspace
             # build each package separately
+            mkdir -p /run/images
             for pkg in $PKGS; do
               TAG="$(linuxkit pkg show-tag "pkg/${pkg}")-arm64"
               # build package
