@@ -175,12 +175,10 @@ jobs:
             mkdir -p /run/images
             for pkg in $PKGS; do
               # build package
-              docker exec -t linuxkit-cli linuxkit pkg build -disable-content-trust "pkg/${pkg}" | tee -a build.log
+              docker exec -t linuxkit-cli linuxkit pkg build -force -disable-content-trust "pkg/${pkg}" | tee -a build.log
               # save for push stage
               TAG="$(linuxkit pkg show-tag "pkg/${pkg}")-arm64"
-              if [ -n "$(docker images -q "$TAG")" ] ; then
-                docker save -o "/run/images/${pkg}.tar" "$TAG"
-              fi
+              docker save -o "/run/images/${pkg}.tar" "$TAG"
             done
           no_output_timeout: 30m
       - persist_to_workspace:
