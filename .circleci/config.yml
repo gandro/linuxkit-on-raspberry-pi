@@ -125,7 +125,7 @@ jobs:
           root: /run/linuxkit
           paths:
             - dockerd
-  build_tools_dockerd_arm64_image:
+  build_tools_dockerd_arm64:
     parameters:
       tag:
         type: string
