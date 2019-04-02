@@ -3,13 +3,13 @@ version: 2.1
 executors:
   native:
     docker:
-      - image: linuxkitrpi/linuxkit-cli:20190401
+      - image: linuxkitrpi/linuxkit-cli:2cfbeb088840f54ece18598229db01594a833a7b
   dockerd_arm64:
     docker:
-      - image: linuxkitrpi/linuxkit-cli:20190401
+      - image: linuxkitrpi/linuxkit-cli:2cfbeb088840f54ece18598229db01594a833a7b
         environment:
           DOCKER_HOST: tcp://localhost:2375
-      - image: linuxkitrpi/dockerd-arm64
+      - image: linuxkitrpi/dockerd-arm64:055c8da09206ccc107a12ccd2d095507ae1f8c59
 
 commands:
   wait_for_docker:
@@ -113,7 +113,7 @@ jobs:
           command: |
             # run linuxkit in dockerd on arm64
             docker run -t -i -d -e DOCKER_HOST -v /workspace -w /workspace/tools/dockerd-arm64 \
-              --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli:20190401 cat
+              --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli:2cfbeb088840f54ece18598229db01594a833a7b cat
             docker cp -a . linuxkit-cli:/workspace
             docker exec -t linuxkit-cli linuxkit build dockerd.yml
             # save artifacts to workspace
@@ -168,7 +168,7 @@ jobs:
             PKGS="chrony firmware wireless-regdb wpa_supplicant"
             # spawn a background container for running the linuxkit-cli on arm64
             docker run -t -i -d -e DOCKER_HOST -v /workspace -w /workspace \
-              --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli:20190401 cat
+              --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli:2cfbeb088840f54ece18598229db01594a833a7b cat
             docker cp -a . linuxkit-cli:/workspace
             # build each package separately
             mkdir -p /run/images
