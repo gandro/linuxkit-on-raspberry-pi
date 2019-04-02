@@ -70,7 +70,7 @@ jobs:
         enum: ["amd64", "arm64"]
       tag:
         type: string
-        default: $(date "+%Y%m%d")
+        default: $(git -C "tools/linuxkit-cli" rev-parse "HEAD:./")
       executor:
         type: executor
         default: native
@@ -130,7 +130,7 @@ jobs:
     parameters:
       tag:
         type: string
-        default: $(date "+%Y%m%d")
+        default: $(git -C "tools/dockerd-arm64" rev-parse "HEAD:./")
     executor: native
     steps:
       - checkout
@@ -241,7 +241,7 @@ jobs:
               docker push "$tag"
             done
             # push multiarch manifests
-            TARGETS=$(printf '%s' "$TAGS" | sed -n -r 's/(.*)-(amd64|arm64)/\1/p')
+            TARGETS=$(printf '%s' "$TAGS" | sed -n -r 's/(.*)-(amd64|arm64)$/\1/p')
             for target in $TARGETS ; do
               push-manifest.sh "$target"
             done
