@@ -161,8 +161,6 @@ jobs:
     steps:
       - checkout
       - wait_for_docker
-      - restore_docker_cache:
-          key: v1-images-pkg
       - run:
           name: Build Packages in pkg/
           command: |
@@ -176,18 +174,22 @@ jobs:
             mkdir -p /run/images
             for pkg in $PKGS; do
               # build package
-              docker exec -t linuxkit-cli linuxkit pkg build -force -disable-content-trust "pkg/${pkg}" | tee -a build.log
+              docker exec -t linuxkit-cli \
+                linuxkit pkg build -disable-content-trust "pkg/${pkg}"
               # save for push stage
               TAG="$(linuxkit pkg show-tag "pkg/${pkg}")-arm64"
-              docker save -o "/run/images/${pkg}.tar" "$TAG"
+              if [ -n "$(docker images -q "$TAG")" ] ; then
+                docker save -o "/run/images/${pkg}.tar" "$TAG"
+              fi
             done
+            # avoid empty workspace dir
+            touch /run/images/.keep
           no_output_timeout: 30m
       - persist_to_workspace:
           root: /run/images
           paths:
             - "*.tar"
-      - save_docker_cache:
-          key: v1-images-pkg-{{ .BuildNum }}
+            - .keep
 
   build_pkg_kernel:
     executor: native
