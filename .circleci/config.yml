@@ -145,7 +145,7 @@ jobs:
             # copy over linuxkit images from previous stage
             cp /run/linuxkit/dockerd/* tools/dockerd-arm64
             # build docker image
-            TAG="linuxkitrpi/dockerd-arm64:<< parameters.tag >>-amd64"
+            TAG="linuxkitrpi/dockerd-arm64:<< parameters.tag >>"
             docker build -t "$TAG" tools/dockerd-arm64 | tee -a build.log
             # save for push stage
             mkdir -p /run/images
