@@ -8,7 +8,7 @@ executors:
     docker:
       - image: linuxkitrpi/linuxkit-cli:20190401
         environment:
-          DOCKER_HOST: localhost:2375
+          DOCKER_HOST: tcp://localhost:2375
       - image: linuxkitrpi/dockerd-arm64
 
 commands:
