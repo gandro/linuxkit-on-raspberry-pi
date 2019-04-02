@@ -33,11 +33,13 @@ commands:
           command: |
             # filter out empty layers
             IMAGES=""
-            for i in $(sed -n 's/^ ---> \([[:xdigit:]]\+\)$/\1/p' << parameters.build_log >>) ; do
-              if [ "$(docker inspect --format '{{.Size}}' "$i")" -gt 0 ] ; then
-                IMAGES="$IMAGES $i"
-              fi
-            done
+            if [ -f "<< parameters.build_log >>" ] ; then
+              for i in $(sed -n 's/^ ---> \([[:xdigit:]]\+\)$/\1/p' << parameters.build_log >>) ; do
+                if [ "$(docker inspect --format '{{.Size}}' "$i")" -gt 0 ] ; then
+                  IMAGES="$IMAGES $i"
+                fi
+              done
+            fi
             # save layers (if there are any)
             mkdir -p /var/cache/layers
             if [ -n "$IMAGES" ] ; then
@@ -90,17 +92,19 @@ jobs:
       - run:
           name: Build tools/linuxkit-cli
           command: |
+            mkdir -p /run/images/linuxkit-cli-<< parameters.arch >>
             TAG="linuxkitrpi/linuxkit-cli:<< parameters.tag >>-<< parameters.arch >>"
-            # build linuxkit-cli image
-            docker build -t "$TAG" tools/linuxkit-cli | tee -a build.log
-            # save for push stage
-            mkdir -p /run/images
-            docker save -o /run/images/linuxkit-cli-<< parameters.arch >>.tar "$TAG"
+            if [ -z "$(manifest-tool inspect "$TAG")" ] ; then
+              # build linuxkit-cli image
+              docker build -t "$TAG" tools/linuxkit-cli | tee -a build.log
+              # save for push stage
+              docker save -o /run/images/linuxkit-cli-<< parameters.arch >>/linuxkit-cli.tar "$TAG"
+            fi
           no_output_timeout: 30m
       - persist_to_workspace:
           root: /run/images
           paths:
-            - linuxkit-cli-<< parameters.arch >>.tar
+            - linuxkit-cli-<< parameters.arch >>
       - save_docker_cache:
           key: v1-images-cli-<< parameters.arch >>-{{ .BuildNum }}
   build_tools_dockerd_arm64_linuxkit:
@@ -142,18 +146,20 @@ jobs:
       - run:
           name: Build tools/dockerd-arm64
           command: |
-            # copy over linuxkit images from previous stage
-            cp /run/linuxkit/dockerd/* tools/dockerd-arm64
-            # build docker image
+            mkdir -p /run/images/dockerd-arm64
             TAG="linuxkitrpi/dockerd-arm64:<< parameters.tag >>"
-            docker build -t "$TAG" tools/dockerd-arm64 | tee -a build.log
-            # save for push stage
-            mkdir -p /run/images
-            docker save -o /run/images/dockerd.tar "${TAG}"
+            if [ -z "$(manifest-tool inspect "$TAG")" ] ; then
+              # copy over linuxkit images from previous stage
+              cp /run/linuxkit/dockerd/* tools/dockerd-arm64
+              # build docker image
+              docker build -t "$TAG" tools/dockerd-arm64 | tee -a build.log
+              # save for push stage
+              docker save -o /run/images/dockerd-arm64/dockerd.tar "${TAG}"
+            fi
       - persist_to_workspace:
           root: /run/images
           paths:
-            - dockerd.tar
+            - dockerd-arm64
       - save_docker_cache:
           key: v1-images-dockerd-{{ .BuildNum }}
   build_pkg:
@@ -170,8 +176,9 @@ jobs:
             docker run -t -i -d -e DOCKER_HOST -v /workspace -w /workspace \
               --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli:2cfbeb088840f54ece18598229db01594a833a7b cat
             docker cp -a . linuxkit-cli:/workspace
-            # build each package separately
-            mkdir -p /run/images
+            # create artifact directory
+            mkdir -p /run/images/pkg
+            # build each package if separately
             for pkg in $PKGS; do
               # build package
               docker exec -t linuxkit-cli \
@@ -179,17 +186,14 @@ jobs:
               # save for push stage
               TAG="$(linuxkit pkg show-tag "pkg/${pkg}")-arm64"
               if [ -n "$(docker images -q "$TAG")" ] ; then
-                docker save -o "/run/images/${pkg}.tar" "$TAG"
+                docker save -o "/run/images/pkg/${pkg}.tar" "$TAG"
               fi
             done
-            # avoid empty workspace dir
-            touch /run/images/.keep
           no_output_timeout: 30m
       - persist_to_workspace:
           root: /run/images
           paths:
-            - "*.tar"
-            - .keep
+            - pkg
 
   build_pkg_kernel:
     executor: native
@@ -201,22 +205,24 @@ jobs:
       - run:
           name: Cross-Compile RaspberryPi Kernel
           command: |
+            mkdir -p /run/images/kernel
             TAG="$(linuxkit pkg show-tag pkg/kernel)-arm64"
-            # cross compile kernel
-            docker build -t "$TAG" --build-arg "AARCH64_CROSS_COMPILE=1" pkg/kernel | tee -a build.log
-            # fix manifest architecture
-            LAYERS=$(mktemp -d "${TMPDIR:-/tmp}/layers.XXXXXXXXX")
-            docker save "$TAG" | tar -C "$LAYERS" -x
-            find "$LAYERS" -type f \( -name 'json' -o -name '*.json' \) \
-                -exec sed -i 's|\("architecture"\s*:\s*\)"amd64"|\1"arm64"|g' '{}' \;
-            tar -C "$LAYERS" -c . | docker load
-            # save for push stage
-            mkdir -p /run/images
-            docker save -o /run/images/kernel.tar "${TAG}"
+            if [ -z "$(manifest-tool inspect "$TAG")" ] ; then
+              # cross compile kernel
+              docker build -t "$TAG" --build-arg "AARCH64_CROSS_COMPILE=1" pkg/kernel | tee -a build.log
+              # fix manifest architecture
+              LAYERS=$(mktemp -d "${TMPDIR:-/tmp}/layers.XXXXXXXXX")
+              docker save "$TAG" | tar -C "$LAYERS" -x
+              find "$LAYERS" -type f \( -name 'json' -o -name '*.json' \) \
+                  -exec sed -i 's|\("architecture"\s*:\s*\)"amd64"|\1"arm64"|g' '{}' \;
+              tar -C "$LAYERS" -c . | docker load
+              # save for push stage
+              docker save -o /run/images/kernel/kernel.tar "${TAG}"
+            fi
       - persist_to_workspace:
           root: /run/images
           paths:
-            - kernel.tar
+            - kernel
       - save_docker_cache:
           key: v1-images-kernel-{{ .BuildNum }}
   push:
@@ -235,25 +241,16 @@ jobs:
       - run:
           name: Pushing Images
           command: |
-            # helper function to avoid re-pushing already published images
-            docker_tag_exists() {
-              manifest-tool inspect "$1" 2>&1 >/dev/null
-            }
-
             # push all locally available images
             TAGS=$(docker images --filter 'reference=linuxkitrpi/*' --format '{{.Repository}}:{{.Tag}}')
             for tag in $TAGS ; do
-              if ! docker_tag_exists "$tag"; then
-                docker push "$tag"
-              fi
+              docker push "$tag"
             done
 
             # push multiarch manifests
             TARGETS=$(printf '%s' "$TAGS" | sed -n -r 's/(.*)-(amd64|arm64)$/\1/p' | sort -u)
             for target in $TARGETS ; do
-              if ! docker_tag_exists "$target"; then
-                push-manifest.sh "$target"
-              fi
+              push-manifest.sh "$target"
             done
 
 workflows:
