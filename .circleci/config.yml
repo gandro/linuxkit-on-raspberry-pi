@@ -171,7 +171,7 @@ jobs:
               --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli:2cfbeb088840f54ece18598229db01594a833a7b cat
             docker cp -a . linuxkit-cli:/workspace
             # build each package separately
-            mkdir -p /run/images
+            mkdir -p /run/images/pkg
             for pkg in $PKGS; do
               # build package
               docker exec -t linuxkit-cli \
@@ -179,17 +179,14 @@ jobs:
               # save for push stage
               TAG="$(linuxkit pkg show-tag "pkg/${pkg}")-arm64"
               if [ -n "$(docker images -q "$TAG")" ] ; then
-                docker save -o "/run/images/${pkg}.tar" "$TAG"
+                docker save -o "/run/images/pkg/${pkg}.tar" "$TAG"
               fi
             done
-            # avoid empty workspace dir
-            touch /run/images/.keep
           no_output_timeout: 30m
       - persist_to_workspace:
           root: /run/images
           paths:
-            - "*.tar"
-            - .keep
+            - pkg
 
   build_pkg_kernel:
     executor: native
@@ -235,15 +232,10 @@ jobs:
       - run:
           name: Pushing Images
           command: |
-            # helper function to avoid re-pushing already published images
-            docker_tag_exists() {
-              manifest-tool inspect "$1" 2>&1 >/dev/null
-            }
-
-            # push all locally available images
+            # push all local images if they do not exist in the registry
             TAGS=$(docker images --filter 'reference=linuxkitrpi/*' --format '{{.Repository}}:{{.Tag}}')
             for tag in $TAGS ; do
-              if ! docker_tag_exists "$tag"; then
+              if [ -z "$(manifest-tool inspect "$tag")" ] ; then
                 docker push "$tag"
               fi
             done
@@ -251,7 +243,7 @@ jobs:
             # push multiarch manifests
             TARGETS=$(printf '%s' "$TAGS" | sed -n -r 's/(.*)-(amd64|arm64)$/\1/p' | sort -u)
             for target in $TARGETS ; do
-              if ! docker_tag_exists "$target"; then
+              if [ -z "$(manifest-tool inspect "$target")" ] ; then
                 push-manifest.sh "$target"
               fi
             done
