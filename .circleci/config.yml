@@ -33,7 +33,7 @@ commands:
           command: |
             # filter out empty layers
             IMAGES=""
-            for i in $(sed -n 's/^ ---> \([[:xdigit:]]\+\)$/\1/p' << parameters.build_log >>) ; do
+            for i in $(sed -n 's/^ ---> \([[:xdigit:]]\+\)\w*$/\1/p' << parameters.build_log >>) ; do
               if [ "$(docker inspect --format '{{.Size}}' "$i")" -gt 0 ] ; then
                 IMAGES="$IMAGES $i"
               fi
