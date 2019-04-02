@@ -1,9 +1,0 @@
-#!/bin/sh
-set -eu
-
-TIMEOUT="300"
-DOCKER_API="http://${DOCKER_HOST}/v1.39/info"
-
-until curl -sf "$DOCKER_API" ; do
-  sleep 1
-done

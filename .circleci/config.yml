@@ -31,15 +31,16 @@ commands:
       - run:
           name: Save Layers to Cache
           command: |
+            # filter out empty layers
             IMAGES=""
             for i in $(sed -n 's/^ ---> \([[:xdigit:]]\+\)$/\1/p' << parameters.build_log >>) ; do
               if [ "$(docker inspect --format '{{.Size}}' "$i")" -gt 0 ] ; then
                 IMAGES="$IMAGES $i"
               fi
             done
-
+            # save layers (if there are any)
+            mkdir -p /var/cache/layers
             if [ -n "$IMAGES" ] ; then
-              mkdir -p /var/cache/layers
               docker save -o "/var/cache/layers/build.tar" $IMAGES
             fi
           no_output_timeout: 15m
@@ -61,7 +62,7 @@ commands:
           no_output_timeout: 15m
 
 jobs:
-  build_cli:
+  build_tools_cli:
     parameters:
       arch:
         type: enum
@@ -102,7 +103,59 @@ jobs:
             - linuxkit-cli-<< parameters.arch >>.tar
       - save_docker_cache:
           key: v1-images-cli-<< parameters.arch >>-{{ .BuildNum }}
-  build_pkgs:
+  build_tools_dockerd_arm64_linuxkit:
+    executor: dockerd_arm64
+    steps:
+      - checkout
+      - wait_for_docker
+      - run:
+          name: Build LinuxKit dockerd.yml on arm64
+          command: |
+            # run linuxkit in dockerd on arm64
+            docker run -t -i -d -e DOCKER_HOST -v /workspace -w /workspace/tools/dockerd-arm64 \
+              --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli:20190401 cat
+            docker cp -a . linuxkit-cli:/workspace
+            docker exec -t linuxkit-cli linuxkit build dockerd.yml
+            # save artifacts to workspace
+            mkdir -p /run/linuxkit/dockerd
+            for f in dockerd-cmdline dockerd-initrd.img dockerd-kernel ; do
+              docker cp -a "/workspace/tools/dockerd-arm64/${f}" /run/linuxkit/dockerd
+            done
+      - persist_to_workspace:
+          root: /run/linuxkit
+          paths:
+            - dockerd
+  build_tools_dockerd_arm64_image:
+    parameters:
+      tag:
+        type: string
+        default: $(date "+%Y%m%d")
+    executor: native
+    steps:
+      - checkout
+      - setup_remote_docker
+      - restore_docker_cache:
+          key: v1-images-dockerd
+      - attach_workspace:
+          at: /run/linuxkit
+      - run:
+          name: Build tools/dockerd-arm64
+          command: |
+            # copy over linuxkit images from previous stage
+            cp /run/linuxkit/dockerd/* tools/dockerd-arm64
+            # build docker image
+            TAG="linuxkitrpi/dockerd-arm64:<< parameters.tag >>"
+            docker build -t "$TAG" tools/dockerd-arm64 | tee -a build.log
+            # save for push stage
+            mkdir -p /run/images
+            docker save -o /run/images/dockerd.tar "${TAG}"
+      - persist_to_workspace:
+          root: /run/images
+          paths:
+            - dockerd.tar
+      - save_docker_cache:
+          key: v1-images-dockerd-{{ .BuildNum }}
+  build_pkg:
     executor: dockerd_arm64
     steps:
       - checkout
@@ -137,7 +190,7 @@ jobs:
       - save_docker_cache:
           key: v1-images-pkg-{{ .BuildNum }}
 
-  build_kernel:
+  build_pkg_kernel:
     executor: native
     steps:
       - checkout
@@ -196,22 +249,27 @@ workflows:
   version: 2
   build_and_push:
     jobs:
-      - build_cli:
-          name: build_cli_amd64
-      - build_cli:
-          name: build_cli_arm64
+      - build_pkg_kernel
+      - build_pkg
+      - build_tools_cli:
+          name: build_tools_cli_amd64
+      - build_tools_cli:
+          name: build_tools_cli_arm64
           arch: arm64
           executor: dockerd_arm64
           setup_remote_docker: false
-      - build_kernel
-      - build_pkgs
+      - build_tools_dockerd_arm64_linuxkit
+      - build_tools_dockerd_arm64:
+          requires:
+            - build_tools_dockerd_arm64_linuxkit
       - push:
           context: dockerhub-creds
           requires:
-            - build_kernel
-            - build_cli_amd64
-            - build_cli_arm64
-            - build_pkgs
+            - build_pkg_kernel
+            - build_pkg
+            - build_tools_dockerd_arm64
+            - build_tools_cli_amd64
+            - build_tools_cli_arm64
           filters:
             branches:
               only: master
