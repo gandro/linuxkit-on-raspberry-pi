@@ -119,7 +119,7 @@ jobs:
             # save artifacts to workspace
             mkdir -p /run/linuxkit/dockerd
             for f in dockerd-cmdline dockerd-initrd.img dockerd-kernel ; do
-              docker cp -a "/workspace/tools/dockerd-arm64/${f}" /run/linuxkit/dockerd
+              docker cp -a linuxkit-cli:/workspace/tools/dockerd-arm64/$f /run/linuxkit/dockerd
             done
           no_output_timeout: 20m
       - persist_to_workspace:
