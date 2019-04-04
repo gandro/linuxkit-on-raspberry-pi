@@ -22,7 +22,7 @@ RUN git clone $NOTARY_REPO /go/src/github.com/theupdateframework/notary && \
     make static
 
 FROM docker:18.09
-RUN apk add --no-cache expect git jq
+RUN apk add --no-cache expect git gnupg jq
 COPY --from=builder /go/src/github.com/linuxkit/linuxkit/scripts/push-manifest.sh /usr/local/bin/
 COPY --from=builder /go/src/github.com/linuxkit/linuxkit/scripts/cleanup-older-images.sh /usr/local/bin/
 COPY --from=builder /go/src/github.com/linuxkit/linuxkit/bin/linuxkit /usr/local/bin/
