@@ -29,7 +29,7 @@ gunzip -c /rootfs/boot/kernel > kernel.img || cp /rootfs/boot/kernel kernel.img
 
 # write down modified cmdline
 CMDLINE=$(cat /rootfs/boot/cmdline)
-printf '%s root=/dev/mmcblk0 rootwait' "$CMDLINE" > cmdline.txt
+printf '%s root=/dev/mmcblk0p2 rootwait' "$CMDLINE" > cmdline.txt
 
 # copy kernel device trees
 cp /rootfs/boot/dtb/broadcom/* .
