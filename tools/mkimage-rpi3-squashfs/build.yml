@@ -1,0 +1,3 @@
+org: linuxkitrpi
+image: mkimage-squashfs
+network: true

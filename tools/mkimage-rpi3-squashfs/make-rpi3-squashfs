@@ -1,0 +1,83 @@
+#!/bin/sh
+
+set -e
+
+# input is a tarball on stdin with kernel, dtbs and cmdline in /boot
+# output is a raw disk image for the SD card
+
+# for debugging
+[ -n "$DEBUG" ] && set -x
+
+# input is a tarball on stdin with kernel, dtbs and cmdline in /boot
+# output is the raw disk image for the SD card
+
+mkdir -p /bootfs
+mkdir -p /rootfs
+
+# extract. BSD tar auto recognises compression
+cd /rootfs
+[ -t 0 ] || bsdtar xzf -
+
+# prepare boot parition
+cd /bootfs
+
+# copy raspberrypi firmware files
+cp /boot/* .
+
+# decompress kernel if necessary
+gunzip -c /rootfs/boot/kernel > kernel.img || cp /rootfs/boot/kernel kernel.img
+
+# copy over cmdline and device trees
+cp /rootfs/boot/cmdline cmdline.txt
+cp /rootfs/boot/dtb/broadcom/* .
+cp -r /rootfs/boot/dtb/overlays .
+
+# remove files from rootfs
+rm -rf /rootfs/boot
+
+# compute size of boot volume, add 10% and round up to the nearest megabyte
+BOOT_FILE_SIZE_KB=$(du -s /bootfs | cut -f1)
+BOOT_FILE_SIZE_KB=$(( $BOOT_FILE_SIZE_KB + $BOOT_FILE_SIZE_KB / 10 ))
+BOOT_FILE_SIZE_KB=$(( ( $BOOT_FILE_SIZE_KB + 1024-1 ) / 1024 * 1024 ))
+
+# fat boot parition
+BOOT_FILE=/tmp/boot.img
+
+( exec 1>&2;
+# create boot parition
+mkfs.vfat -v -C $BOOT_FILE $(( $BOOT_FILE_SIZE_KB ))
+echo "mtools_skip_check=1" >> /etc/mtools.conf
+mcopy -i $BOOT_FILE -bsQ * ::/
+)
+
+cd /rootfs
+
+# squashfs root partition
+ROOTFS_FILE=/tmp/rootfs.img
+
+( exec 1>&2;
+# create squashfs partition
+mksquashfs . $ROOTFS_FILE
+)
+
+# compute rootfs file size and round up to the nearest megabyte
+ROOTFS_FILE_SIZE=$(stat -c +%s $ROOTFS_FILE)
+ROOTFS_FILE_SIZE_KB=$(( ( ( ($ROOTFS_FILE_SIZE + 1024-1) / 1024 ) + 1024-1) / 1024 * 1024 ))
+# pad file with zeros
+truncate -s $(( $ROOTFS_FILE_SIZE_KB * 1024 )) $ROOTFS_FILE
+
+# create raw disk image containing the other two file systems
+SDCARD_FILE=/tmp/sdcard.img
+dd if=/dev/zero of=$SDCARD_FILE bs=1M count=1
+cat $BOOT_FILE $ROOTFS_FILE >> $SDCARD_FILE
+
+( exec 1>&2;
+# create partition table
+cat <<EOF | sfdisk $SDCARD_FILE
+label: dos
+1024K,${BOOT_FILE_SIZE_KB}K,0c,*
+,${ROOTFS_FILE_SIZE_KB}K,83
+EOF
+)
+
+cat $SDCARD_FILE
