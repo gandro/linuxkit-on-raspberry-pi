@@ -27,8 +27,11 @@ cp /boot/* .
 # decompress kernel if necessary
 gunzip -c /rootfs/boot/kernel > kernel.img || cp /rootfs/boot/kernel kernel.img
 
-# copy over cmdline and device trees
-cp /rootfs/boot/cmdline cmdline.txt
+# write down modified cmdline
+CMDLINE=$(cat /rootfs/boot/cmdline)
+printf '%s root=/dev/mmcblk0 rootwait' "$CMDLINE" > cmdline.txt
+
+# copy kernel device trees
 cp /rootfs/boot/dtb/broadcom/* .
 cp -r /rootfs/boot/dtb/overlays .
 
