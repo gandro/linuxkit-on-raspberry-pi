@@ -161,8 +161,6 @@ jobs:
     steps:
       - checkout
       - wait_for_docker
-      - restore_docker_cache:
-          key: v1-images-pkg
       - run:
           name: Build Packages in pkg/
           command: |
@@ -189,9 +187,6 @@ jobs:
           root: /run/images
           paths:
             - pkg
-      - save_docker_cache:
-          key: v1-images-pkg-{{ .BuildNum }}
-
   build_pkg_kernel:
     executor: native
     steps:
