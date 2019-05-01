@@ -32,7 +32,7 @@ CMDLINE=$(cat /rootfs/boot/cmdline)
 printf '%s root=/dev/mmcblk0p2 rootwait' "$CMDLINE" > cmdline.txt
 
 # override config.txt (if it exists)
-[ -f /rootfs/boot/config.txt ] && cp /rootfs/boot/config.txt config.txt
+[ -f /rootfs/boot/config.txt ] && cp -f /rootfs/boot/config.txt config.txt
 
 # copy kernel device trees
 cp /rootfs/boot/dtb/broadcom/* .
