@@ -1,0 +1,3 @@
+org: linuxkitrpi
+image: linuxkit-cli
+network: true

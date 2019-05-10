@@ -1,9 +1,9 @@
 #!/bin/sh
 set -o errexit
 
-: ${KERNEL:=/dockerd/dockerd-kernel}
-: ${INITRD:=/dockerd/dockerd-initrd.img}
-: ${CMDLINE:=`cat /dockerd/dockerd-cmdline`}
+: ${KERNEL:=/dockerd/kernel}
+: ${INITRD:=/dockerd/initrd.img}
+: ${CMDLINE:=`cat /dockerd/cmdline`}
 : ${CPUS:=`nproc`}
 : ${CPUS_LIMIT:=8}
 : ${MEM:=2147483648}

@@ -1,0 +1,5 @@
+org: linuxkitrpi
+image: dockerd-arm64
+network: true
+arches:
+  - amd64
