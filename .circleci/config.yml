@@ -33,9 +33,8 @@ jobs:
           command: |
             sh -x build.sh -s \
               pkg/* \
-              tools/linuxkit-cli \
-              tools/mkimage-rpi3-squashfs \
-              images/dockerd.yml
+              kernel \
+              tools/* \
           no_output_timeout: 20m
       - persist_to_workspace:
           root: build
