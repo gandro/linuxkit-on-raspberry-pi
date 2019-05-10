@@ -101,7 +101,7 @@ linuxkit_cli_start() {
     docker exec -i "$LINUXKIT_CLI_NAME" tar -x
 
   # copy docker certs
-  if [ -d "${DOCKER_CERT_PATH+}" ] ; then
+  if [ -d "${DOCKER_CERT_PATH:-}" ] ; then
     docker exec "$LINUXKIT_CLI_NAME" mkdir -p "$(dirname $DOCKER_CERT_PATH)"
     docker cp "$DOCKER_CERT_PATH" "${LINUXKIT_CLI_NAME}:${DOCKER_CERT_PATH}"
   fi
