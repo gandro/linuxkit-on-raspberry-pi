@@ -40,7 +40,8 @@ docker_arch() {
 }
 
 docker_context_forward() {
-  printf ' %s' "--env" "DOCKER_HOST"
+  printf ' --env %s' "DOCKER_HOST" \
+    "DOCKER_CERT_PATH" "DOCKER_TLS" "DOCKER_TLS_VERIFY"
   case "$DOCKER_HOST" in
     'unix://'*)
       printf ' %s' "--volume" "${DOCKER_HOST#unix:/}:${DOCKER_HOST#unix:/}"
@@ -98,6 +99,12 @@ linuxkit_cli_start() {
   # copy over basedir (excluding destdir)
   tar -c -C "$BASEDIR" --exclude "${DESTDIR#${BASEDIR}/}" . | \
     docker exec -i "$LINUXKIT_CLI_NAME" tar -x
+
+  # copy docker certs
+  if [ -d "$DOCKER_CERT_PATH" ] ; then
+    docker exec "$LINUXKIT_CLI_NAME" mkdir -p "$(dirname $DOCKER_CERT_PATH)"
+    docker cp "$DOCKER_CERT_PATH" "${LINUXKIT_CLI_NAME}:${DOCKER_CERT_PATH}"
+  fi
 
   # set docker config
   if [ -e ~/.docker/config.json ]; then
