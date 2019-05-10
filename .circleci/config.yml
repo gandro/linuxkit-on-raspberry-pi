@@ -2,12 +2,11 @@ version: 2.1
 
 jobs:
   build_arm64:
-    executor:
-      docker:
-        - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
-          environment:
-            DOCKER_HOST: tcp://localhost:2375
-        - image: linuxkitrpi/dockerd-arm64:055c8da09206ccc107a12ccd2d095507ae1f8c59
+    docker:
+      - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
+        environment:
+          DOCKER_HOST: tcp://localhost:2375
+      - image: linuxkitrpi/dockerd-arm64:055c8da09206ccc107a12ccd2d095507ae1f8c59
     steps:
       - checkout
       - run:
@@ -24,9 +23,8 @@ jobs:
           paths:
             - '*.tar'
   build_amd64:
-    executor:
-      docker:
-        - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
+    docker:
+      - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
     steps:
       - checkout
       - setup_remote_docker
@@ -44,9 +42,8 @@ jobs:
           paths:
             - '*.tar'
   push:
-    executor:
-      docker:
-        - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
+    docker:
+      - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
     steps:
       - checkout
       - setup_remote_docker
