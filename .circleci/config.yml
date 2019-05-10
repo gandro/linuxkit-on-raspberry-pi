@@ -1,277 +1,79 @@
 version: 2.1
 
-executors:
-  native:
-    docker:
-      - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
-  dockerd_arm64:
-    docker:
-      - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
-        environment:
-          DOCKER_HOST: tcp://localhost:2375
-      - image: linuxkitrpi/dockerd-arm64:055c8da09206ccc107a12ccd2d095507ae1f8c59
-
-commands:
-  wait_for_docker:
-    steps:
-      - run:
-          name: Wait for dockerd to come up
-          command: |
-            while [ -z "$(docker version --format '{{.Server.Version}}' 2>/dev/null)" ] ; do
-              sleep 1
-            done
-  save_docker_cache:
-    parameters:
-      build_log:
-        type: string
-        default: "build.log"
-      key:
-        type: string
-    steps:
-      - run:
-          name: Save Layers to Cache
-          command: |
-            # filter out empty layers
-            IMAGES=""
-            for i in $(sed -n 's/^ ---> \([[:xdigit:]]\+\)\w*$/\1/p' << parameters.build_log >>) ; do
-              if [ "$(docker inspect --format '{{.Size}}' "$i")" -gt 0 ] ; then
-                IMAGES="$IMAGES $i"
-              fi
-            done
-            # save layers (if there are any)
-            mkdir -p /var/cache/layers
-            if [ -n "$IMAGES" ] ; then
-              docker save -o "/var/cache/layers/build.tar" $IMAGES
-            fi
-          no_output_timeout: 15m
-      - save_cache:
-          key: << parameters.key >>
-          paths:
-            - /var/cache/layers
-  restore_docker_cache:
-    parameters:
-      key:
-        type: string
-    steps:
-      - restore_cache:
-          keys:
-            - << parameters.key >>
-      - run:
-          name: Restore Layers from Cache
-          command: docker load -i /var/cache/layers/build.tar || true
-          no_output_timeout: 15m
-
 jobs:
-  build_tools_cli:
-    parameters:
-      arch:
-        type: enum
-        default: amd64
-        enum: ["amd64", "arm64"]
-      tag:
-        type: string
-        default: $(git -C "tools/linuxkit-cli" rev-parse "HEAD:./")
-      executor:
-        type: executor
-        default: native
-      setup_remote_docker:
-        type: boolean
-        default: true
-    executor: << parameters.executor >>
+  build_arm64:
+    executor:
+      docker:
+        - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
+          environment:
+            DOCKER_HOST: tcp://localhost:2375
+        - image: linuxkitrpi/dockerd-arm64:055c8da09206ccc107a12ccd2d095507ae1f8c59
     steps:
       - checkout
-      - when:
-          condition: << parameters.setup_remote_docker >>
-          steps:
-            - setup_remote_docker
-      - wait_for_docker
-      - restore_docker_cache:
-          key: v1-images-cli-<< parameters.arch >>
       - run:
-          name: Build tools/linuxkit-cli
+          name: Build 
           command: |
-            TAG="linuxkitrpi/linuxkit-cli:<< parameters.tag >>-<< parameters.arch >>"
-            # build linuxkit-cli image
-            docker build -t "$TAG" tools/linuxkit-cli | tee -a build.log
-            # save for push stage
-            mkdir -p /run/images
-            docker save -o /run/images/linuxkit-cli-<< parameters.arch >>.tar "$TAG"
-          no_output_timeout: 30m
-      - persist_to_workspace:
-          root: /run/images
-          paths:
-            - linuxkit-cli-<< parameters.arch >>.tar
-      - save_docker_cache:
-          key: v1-images-cli-<< parameters.arch >>-{{ .BuildNum }}
-  build_tools_dockerd_arm64_linuxkit:
-    executor: dockerd_arm64
-    steps:
-      - checkout
-      - wait_for_docker
-      - run:
-          name: Build LinuxKit dockerd.yml on arm64
-          command: |
-            # run linuxkit in dockerd on arm64
-            docker run -t -i -d -e DOCKER_HOST -v /workspace -w /workspace/tools/dockerd-arm64 \
-              --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11 cat
-            docker cp -a . linuxkit-cli:/workspace
-            docker exec -t linuxkit-cli linuxkit build dockerd.yml
-            # save artifacts to workspace
-            mkdir -p /run/linuxkit/dockerd
-            for f in dockerd-cmdline dockerd-initrd.img dockerd-kernel ; do
-              docker cp -a linuxkit-cli:/workspace/tools/dockerd-arm64/$f /run/linuxkit/dockerd
-            done
+            sh -x build.sh -s \
+              pkg/* \
+              tools/linuxkit-cli \
+              tools/mkimage-rpi3-squashfs \
+              images/dockerd.yml
           no_output_timeout: 20m
       - persist_to_workspace:
-          root: /run/linuxkit
+          root: build
           paths:
-            - dockerd
-  build_tools_dockerd_arm64:
-    parameters:
-      tag:
-        type: string
-        default: $(git -C "tools/dockerd-arm64" rev-parse "HEAD:./")
-    executor: native
+            - '*.tar'
+  build_amd64:
+    executor:
+      docker:
+        - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
     steps:
       - checkout
       - setup_remote_docker
-      - restore_docker_cache:
-          key: v1-images-dockerd
-      - attach_workspace:
-          at: /run/linuxkit
       - run:
-          name: Build tools/dockerd-arm64
+          name: Build 
           command: |
-            # copy over linuxkit images from previous stage
-            cp /run/linuxkit/dockerd/* tools/dockerd-arm64
-            # build docker image
-            TAG="linuxkitrpi/dockerd-arm64:<< parameters.tag >>"
-            docker build -t "$TAG" tools/dockerd-arm64 | tee -a build.log
-            # save for push stage
-            mkdir -p /run/images
-            docker save -o /run/images/dockerd.tar "${TAG}"
+            sh -x build.sh -s \
+              pkg/* \
+              tools/linuxkit-cli \
+              tools/mkimage-rpi3-squashfs \
+              images/dockerd.yml
+          no_output_timeout: 20m
       - persist_to_workspace:
-          root: /run/images
+          root: build
           paths:
-            - dockerd.tar
-      - save_docker_cache:
-          key: v1-images-dockerd-{{ .BuildNum }}
-  build_pkg:
-    executor: dockerd_arm64
-    steps:
-      - checkout
-      - wait_for_docker
-      - run:
-          name: Build Packages in pkg/
-          command: |
-            # packages to build on arm64
-            PKGS="chrony firmware wireless-regdb wpa_supplicant"
-            # spawn a background container for running the linuxkit-cli on arm64
-            docker run -t -i -d -e DOCKER_HOST -v /workspace -w /workspace \
-              --network host --name linuxkit-cli linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11 cat
-            docker cp -a . linuxkit-cli:/workspace
-            # build each package separately
-            mkdir -p /run/images/pkg
-            for pkg in $PKGS; do
-              # build package
-              docker exec -t linuxkit-cli \
-                linuxkit pkg build -force -disable-content-trust "pkg/${pkg}" | tee -a build.log
-              # save for push stage
-              TAG="$(linuxkit pkg show-tag "pkg/${pkg}")-arm64"
-              if [ -n "$(docker images -q "$TAG")" ] ; then
-                docker save -o "/run/images/pkg/${pkg}.tar" "$TAG"
-              fi
-            done
-          no_output_timeout: 30m
-      - persist_to_workspace:
-          root: /run/images
-          paths:
-            - pkg
-  build_pkg_kernel:
-    executor: native
-    steps:
-      - checkout
-      - setup_remote_docker
-      - restore_docker_cache:
-          key: v1-images-kernel
-      - run:
-          name: Cross-Compile RaspberryPi Kernel
-          command: |
-            TAG="$(linuxkit pkg show-tag pkg/kernel)-arm64"
-            # cross compile kernel
-            docker build -t "$TAG" --build-arg "AARCH64_CROSS_COMPILE=1" pkg/kernel | tee -a build.log
-            # fix manifest architecture
-            LAYERS=$(mktemp -d "${TMPDIR:-/tmp}/layers.XXXXXXXXX")
-            docker save "$TAG" | tar -C "$LAYERS" -x
-            find "$LAYERS" -type f \( -name 'json' -o -name '*.json' \) \
-                -exec sed -i 's|\("architecture"\s*:\s*\)"amd64"|\1"arm64"|g' '{}' \;
-            tar -C "$LAYERS" -c . | docker load
-            # save for push stage
-            mkdir -p /run/images
-            docker save -o /run/images/kernel.tar "${TAG}"
-      - persist_to_workspace:
-          root: /run/images
-          paths:
-            - kernel.tar
-      - save_docker_cache:
-          key: v1-images-kernel-{{ .BuildNum }}
+            - '*.tar'
   push:
-    executor: native
+    executor:
+      docker:
+        - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
     steps:
       - checkout
       - setup_remote_docker
       - attach_workspace:
-          at: /run/images
+          at: build
       - run:
           name: Restore Images from Workspace
-          command: find /run/images -type f -name '*.tar' -exec docker load -i '{}' \;
+          command: find build/ -type f -name '*.tar' -exec docker load -i '{}' \;
       - run:
           name: Log in to Docker
           command: docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD"
       - run:
-          name: Pushing Images
+          name: Push Images to Docker Hub
           command: |
-            # push all local images if they do not exist in the registry
-            TAGS=$(docker images --filter 'reference=linuxkitrpi/*' --format '{{.Repository}}:{{.Tag}}')
-            for tag in $TAGS ; do
-              if [ -z "$(manifest-tool inspect "$tag")" ] ; then
-                docker push "$tag"
-              fi
-            done
-
-            # push multiarch manifests
-            TARGETS=$(printf '%s' "$TAGS" | sed -n -r 's/(.*)-(amd64|arm64)$/\1/p' | sort -u)
-            for target in $TARGETS ; do
-              if [ -z "$(manifest-tool inspect "$target")" ] ; then
-                push-manifest.sh "$target"
-              fi
-            done
+            sh -x build.sh -p pkg/* tools/* kernel images/dockerd.yml
 
 workflows:
   version: 2
   build_and_push:
     jobs:
-      - build_pkg_kernel
-      - build_pkg
-      - build_tools_cli:
-          name: build_tools_cli_amd64
-      - build_tools_cli:
-          name: build_tools_cli_arm64
-          arch: arm64
-          executor: dockerd_arm64
-          setup_remote_docker: false
-      - build_tools_dockerd_arm64_linuxkit
-      - build_tools_dockerd_arm64:
-          requires:
-            - build_tools_dockerd_arm64_linuxkit
+      - build_amd64
+      - build_arm64
       - push:
           context: dockerhub-creds
           requires:
-            - build_pkg_kernel
-            - build_pkg
-            - build_tools_dockerd_arm64
-            - build_tools_cli_amd64
-            - build_tools_cli_arm64
+            - build_amd64
+            - build_arm64
           filters:
             branches:
               only: master
