@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  linuxkitrpi: linuxkitrpi/builder@0.1.0
+  linuxkitrpi: linuxkitrpi/builder@0.1.1
 
 jobs:
   build_arm64:
@@ -53,7 +53,7 @@ jobs:
             | tee build.log
           no_output_timeout: 20m
       - linuxkitrpi/save_docker_cache:
-          key: v1-build-layers-arm64-{{ .BuildNum }}
+          key: v1-build-layers-amd64-{{ .BuildNum }}
           build_log: build.log
       - persist_to_workspace:
           root: build
