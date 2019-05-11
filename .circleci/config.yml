@@ -1,15 +1,15 @@
 version: 2.1
 
 orbs:
-  builder: linuxkitrpi/builder@0.1.0
+  linuxkitrpi: linuxkitrpi/builder@0.1.0
 
 jobs:
   build_arm64:
-    executor: builder/builder_arm64
+    executor: linuxkitrpi/builder_arm64
     steps:
       - checkout
-      - builder/wait_for_docker
-      - builder/restore_docker_cache:
+      - linuxkitrpi/wait_for_docker
+      - linuxkitrpi/restore_docker_cache:
           key: v1-build-layers-arm64
       - run:
           name: Build Packages on ARM64
@@ -24,7 +24,7 @@ jobs:
               tools/mkimage-rpi3-squashfs \
             | tee build.log
           no_output_timeout: 20m
-      - builder/save_docker_cache:
+      - linuxkitrpi/save_docker_cache:
           key: v1-build-layers-arm64-{{ .BuildNum }}
           build_log: build.log
       - persist_to_workspace:
@@ -32,12 +32,12 @@ jobs:
           paths:
             - "*.tar"
   build_amd64:
-    executor: builder/builder_amd64
+    executor: linuxkitrpi/builder_amd64
     steps:
       - checkout
       - setup_remote_docker:
           version: "18.09.3"
-      - builder/restore_docker_cache:
+      - linuxkitrpi/restore_docker_cache:
           key: v1-build-layers-amd64
       - run:
           name: Build Packages on AMD64
@@ -52,7 +52,7 @@ jobs:
               tools/mkimage-rpi3-squashfs \
             | tee build.log
           no_output_timeout: 20m
-      - builder/save_docker_cache:
+      - linuxkitrpi/save_docker_cache:
           key: v1-build-layers-arm64-{{ .BuildNum }}
           build_log: build.log
       - persist_to_workspace:
@@ -60,7 +60,7 @@ jobs:
           paths:
             - "*.tar"
   push:
-    executor: builder_amd64
+    executor: linuxkitrpi/builder_amd64
     steps:
       - checkout
       - attach_workspace:
