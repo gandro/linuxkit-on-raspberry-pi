@@ -1,4 +1,4 @@
-FROM linuxkitrpi/images:dockerd-52a12d8ca8b6103703d92d82297d546571c7d5ac-arm64 AS image
+FROM linuxkitrpi/images:dockerd-a611082194b869829b7be35565ce4b7461c1728b-arm64 AS image
 
 FROM alpine:3.9
 RUN apk add --no-cache cdrkit qemu-img qemu-system-aarch64
