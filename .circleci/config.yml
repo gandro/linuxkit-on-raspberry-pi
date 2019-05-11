@@ -1,53 +1,67 @@
 version: 2.1
 
-jobs:
-  build_arm64:
+executors:
+  builder_arm64:
     docker:
       - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
         environment:
           DOCKER_HOST: tcp://localhost:2375
       - image: linuxkitrpi/dockerd-arm64:055c8da09206ccc107a12ccd2d095507ae1f8c59
+  builder_amd64:
+    docker:
+      - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
+
+jobs:
+  build_arm64:
+    executor: builder_arm64
     steps:
       - checkout
       - run:
-          name: Build 
+          name: Build Packages on ARM64
           command: |
-            sh -x build.sh -s \
-              pkg/* \
+            ./build.sh -s \
+              images/dockerd.yml \
+              pkg/chrony \
+              pkg/firmware \
+              pkg/wireless-regdb \
+              pkg/wpa_supplicant \
               tools/linuxkit-cli \
-              tools/mkimage-rpi3-squashfs \
-              images/dockerd.yml
+              tools/mkimage-rpi3-squashfs
           no_output_timeout: 20m
       - persist_to_workspace:
           root: build
           paths:
-            - '*.tar'
+            - "*.tar"
   build_amd64:
-    docker:
-      - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
+    executor: builder_amd64
     steps:
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: "18.09.3"
       - run:
-          name: Build 
+          name: Build Packages on AMD64
           command: |
-            sh -x build.sh -s \
-              pkg/* \
+            ./build.sh -s \
               kernel \
-              tools/* \
+              pkg/chrony \
+              pkg/wireless-regdb \
+              pkg/wpa_supplicant \ \
+              tools/dockerd-arm64 \
+              tools/linuxkit-cli \
+              tools/mkimage-rpi3-squashfs
           no_output_timeout: 20m
       - persist_to_workspace:
           root: build
           paths:
-            - '*.tar'
+            - "*.tar"
   push:
-    docker:
-      - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
+    executor: builder_amd64
     steps:
       - checkout
-      - setup_remote_docker
       - attach_workspace:
           at: build
+      - setup_remote_docker:
+          version: "18.09.3"
       - run:
           name: Restore Images from Workspace
           command: find build/ -type f -name '*.tar' -exec docker load -i '{}' \;
@@ -57,7 +71,16 @@ jobs:
       - run:
           name: Push Images to Docker Hub
           command: |
-            sh -x build.sh -p pkg/* tools/* kernel images/dockerd.yml
+            ./build.sh -p \
+              kernel \
+              images/dockerd.yml \
+              pkg/chrony \
+              pkg/firmware \
+              pkg/wireless-regdb \
+              pkg/wpa_supplicant \
+              tools/dockerd-arm64 \
+              tools/linuxkit-cli \
+              tools/mkimage-rpi3-squashfs
 
 workflows:
   version: 2
