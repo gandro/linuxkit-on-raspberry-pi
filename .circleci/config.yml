@@ -45,7 +45,7 @@ jobs:
               kernel \
               pkg/chrony \
               pkg/wireless-regdb \
-              pkg/wpa_supplicant \ \
+              pkg/wpa_supplicant \
               tools/dockerd-arm64 \
               tools/linuxkit-cli \
               tools/mkimage-rpi3-squashfs
