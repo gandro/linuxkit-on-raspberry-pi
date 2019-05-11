@@ -1,21 +1,21 @@
 FROM golang:1.12.0 AS builder
 
 ENV LINUXKIT_REPO=https://github.com/linuxkit/linuxkit.git
-ENV LINUXKIT_COMMIT=b5c03581e746f35d96ade3d0f77527ddab0b46b4
+ENV LINUXKIT_COMMIT=8129070a90c2cff14faafd93e07c252861438d0f
 RUN git clone $LINUXKIT_REPO /go/src/github.com/linuxkit/linuxkit && \
     cd /go/src/github.com/linuxkit/linuxkit && \
     git checkout --detach $LINUXKIT_COMMIT && \
     make local-static
 
 ENV MANIFEST_REPO=https://github.com/estesp/manifest-tool.git
-ENV MANIFEST_COMMIT=0da654f67ac65e08a9a5b961f20123eb0e3d15e4
+ENV MANIFEST_COMMIT=79bb01eb7f43af842cc1faa49ffe258477721fb3
 RUN git clone $MANIFEST_REPO /go/src/github.com/estesp/manifest-tool && \
     cd /go/src/github.com/estesp/manifest-tool && \
     git checkout --detach $MANIFEST_COMMIT && \
     make static
 
 ENV NOTARY_REPO=https://github.com/theupdateframework/notary.git
-ENV NOTARY_COMMIT=19454b59a0b22cf96079043685c6af0ac7a11a93
+ENV NOTARY_COMMIT=8ff3ca06ec48f31e1f1d2685e3e6a9f65b6b92b5
 RUN git clone $NOTARY_REPO /go/src/github.com/theupdateframework/notary && \
     cd /go/src/github.com/theupdateframework/notary && \
     git checkout --detach $NOTARY_COMMIT && \

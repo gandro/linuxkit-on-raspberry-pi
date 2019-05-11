@@ -1,4 +1,4 @@
-FROM linuxkit/alpine:6ed32ba2b29a12b3d75f3d5b9be1b4ac00e7d479 AS build
+FROM linuxkit/alpine:86cd4f51b49fb9a078b50201d892a3c7973d48ec AS build
 
 ENV FW_REPO=https://github.com/RPi-Distro/firmware-nonfree
 ENV FW_COMMIT=b518de45ced519e8f7a499f4778100173402ae43

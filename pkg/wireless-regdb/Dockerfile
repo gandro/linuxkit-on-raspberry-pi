@@ -1,8 +1,8 @@
-FROM linuxkit/alpine:6ed32ba2b29a12b3d75f3d5b9be1b4ac00e7d479 AS build
+FROM linuxkit/alpine:86cd4f51b49fb9a078b50201d892a3c7973d48ec AS build
 RUN apk add --no-cache git
 
 ENV REGDB_URL=https://kernel.googlesource.com/pub/scm/linux/kernel/git/sforshee/wireless-regdb
-ENV REGDB_COMMIT=15fd5b499c641fad65d2dd2e1501e8825fe90b28
+ENV REGDB_COMMIT=215fc67bbfb6f75eea164b654de3be30f9270f40
 WORKDIR /
 RUN git clone ${REGDB_URL} && \
     cd /wireless-regdb && \

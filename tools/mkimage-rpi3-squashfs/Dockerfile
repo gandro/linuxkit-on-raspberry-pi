@@ -1,4 +1,4 @@
-FROM linuxkit/alpine:6ed32ba2b29a12b3d75f3d5b9be1b4ac00e7d479
+FROM linuxkit/alpine:86cd4f51b49fb9a078b50201d892a3c7973d48ec
 
 RUN \
   apk update && apk upgrade && \
@@ -11,7 +11,7 @@ RUN \
   squashfs-tools \
   && true
 
-ENV RPI_COMMIT=9ce09b817068671faddc56b5400c1b33232eabcf
+ENV RPI_COMMIT=9fd387c96353dd9983aa73bd33b541926de93789
 RUN mkdir -p /boot && \
     cd /boot && \
     curl -fsSLO https://github.com/raspberrypi/firmware/raw/$RPI_COMMIT/boot/bootcode.bin && \
