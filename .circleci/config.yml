@@ -1,21 +1,16 @@
 version: 2.1
 
-executors:
-  builder_arm64:
-    docker:
-      - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
-        environment:
-          DOCKER_HOST: tcp://localhost:2375
-      - image: linuxkitrpi/dockerd-arm64:055c8da09206ccc107a12ccd2d095507ae1f8c59
-  builder_amd64:
-    docker:
-      - image: linuxkitrpi/linuxkit-cli:54ffd7bd1c1d42a9aa0027474720aa2360c45b11
+orbs:
+  builder: linuxkitrpi/builder@0.1.0
 
 jobs:
   build_arm64:
-    executor: builder_arm64
+    executor: builder/builder_arm64
     steps:
       - checkout
+      - builder/wait_for_docker
+      - builder/restore_docker_cache:
+          key: v1-build-layers-arm64
       - run:
           name: Build Packages on ARM64
           command: |
@@ -26,18 +21,24 @@ jobs:
               pkg/wireless-regdb \
               pkg/wpa_supplicant \
               tools/linuxkit-cli \
-              tools/mkimage-rpi3-squashfs
+              tools/mkimage-rpi3-squashfs \
+            | tee build.log
           no_output_timeout: 20m
+      - builder/save_docker_cache:
+          key: v1-build-layers-arm64-{{ .BuildNum }}
+          build_log: build.log
       - persist_to_workspace:
           root: build
           paths:
             - "*.tar"
   build_amd64:
-    executor: builder_amd64
+    executor: builder/builder_amd64
     steps:
       - checkout
       - setup_remote_docker:
           version: "18.09.3"
+      - builder/restore_docker_cache:
+          key: v1-build-layers-amd64
       - run:
           name: Build Packages on AMD64
           command: |
@@ -48,8 +49,12 @@ jobs:
               pkg/wpa_supplicant \
               tools/dockerd-arm64 \
               tools/linuxkit-cli \
-              tools/mkimage-rpi3-squashfs
+              tools/mkimage-rpi3-squashfs \
+            | tee build.log
           no_output_timeout: 20m
+      - builder/save_docker_cache:
+          key: v1-build-layers-arm64-{{ .BuildNum }}
+          build_log: build.log
       - persist_to_workspace:
           root: build
           paths:
