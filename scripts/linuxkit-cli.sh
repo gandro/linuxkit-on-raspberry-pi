@@ -233,8 +233,12 @@ yml_docker_build() {
 
   _agent=$(agent_id)
   _tag=$(yml_docker_show_tag "$@")-$(docker_arch)
-  _tmpdir=$(docker exec "$_agent" mktemp -d)
+  if docker_manifest_exists "$_tag" ; then
+    printf "image '%s' already exists. skipping build.\n" "$_tag" 2>&1
+    return
+  fi
 
+  _tmpdir=$(docker exec "$_agent" mktemp -d)
   docker exec --interactive "$_agent" \
     linuxkit build $LINUXKIT_BUILD_FLAGS \
        -format tar-kernel-initrd -dir "$_tmpdir" -name "build" "$2"
