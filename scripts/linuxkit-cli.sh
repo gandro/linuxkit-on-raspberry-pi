@@ -299,18 +299,19 @@ save() {
   fi
 
   _targets=""
+  _archs=""
   for _arch in amd64 arm64 s390x ; do
     _target="${1}-${_arch}"
     if [ -z "$(docker images -q "$_target")" ] ; then
       printf "image '%s' not found. skipping save.\n" "$_target" 2>&1
     else
       _targets="${_targets} ${_target}"
+      _archs="${_archs} ${_arch}"
     fi
   done
 
   if [ -n "$_targets" ] ; then
-    _file="$(printf '%s' $1 | tr '/:' '-')-$(printf '-%s' $_targets).tar"
-    _path="${_dir}/${_file}"
+    _path="$_dir/$(printf '%s' $1 | tr '/:' '-')$(printf '-%s' $_archs).tar"
     printf "Saving '%s'\n" "$_path"
     mkdir -p "$_dir"
     docker save -o "$_path" $_targets
