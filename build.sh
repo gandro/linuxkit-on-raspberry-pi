@@ -66,6 +66,6 @@ for path ; do
   fi
 
   if [ "${push_image:-no}" = "yes" ] ; then
-    linuxkit push "$tag"
+    linuxkit_cli push "$tag"
   fi
 done
