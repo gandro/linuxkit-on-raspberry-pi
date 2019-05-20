@@ -12,7 +12,7 @@ jobs:
       - run:
           name: Build Packages on ARM64
           command: |
-            ./build.sh -s -w . \
+            ./build.sh -s build -w . \
               images/dockerd.yml \
               pkg/chrony \
               pkg/firmware \
@@ -35,7 +35,8 @@ jobs:
       - run:
           name: Build Packages on AMD64
           command: |
-            ./build.sh -s -w . \
+            mkdir -p build
+            ./build.sh -s build -w . \
               kernel \
               pkg/chrony \
               pkg/wireless-regdb \

@@ -1,8 +1,6 @@
 #!/bin/sh
 set -eu
 
-: ${BASEDIR:=$(dirname "$0")}
-: ${DESTDIR:="${BASEDIR}/build"}
 : ${IMAGES_REPO:=linuxkitrpi/images}
 
 fail() {
@@ -11,14 +9,14 @@ fail() {
 }
 
 linuxkit_cli() {
-  "${BASEDIR}/scripts/linuxkit-cli.sh" "$@"
+  "$(dirname "$0")/scripts/linuxkit-cli.sh" "$@"
 }
 
-while getopts "Bpsw:" arg ; do
+while getopts "Bps:w:" arg ; do
   case "$arg" in
     "B") build_image="no"; ;;
     "p") push_image="yes"; ;;
-    "s") save_image="yes"; ;;
+    "s") save_dir="$OPTARG"; ;;
     "w") workspace="$OPTARG"; ;;
     "?") fail "usage: $0 [-Bps] [-w workspace] [TARGET]..."
       ;;
@@ -61,8 +59,8 @@ for path ; do
       ;;
   esac
 
-  if [ "${save_image:-no}" = "yes" ] ; then
-    linuxkit_cli save -d "$DESTDIR" "$tag"
+  if [ -n "${save_dir:-}" ] ; then
+    linuxkit_cli save -d "$save_dir" "$tag"
   fi
 
   if [ "${push_image:-no}" = "yes" ] ; then
