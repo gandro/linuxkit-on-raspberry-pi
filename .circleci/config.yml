@@ -18,6 +18,7 @@ jobs:
               pkg/firmware \
               pkg/wireless-regdb \
               pkg/wpa_supplicant \
+              tools/builder \
               tools/linuxkit-cli \
               tools/mkimage-rpi3-squashfs
           no_output_timeout: 20m
@@ -39,6 +40,7 @@ jobs:
               pkg/chrony \
               pkg/wireless-regdb \
               pkg/wpa_supplicant \
+              tools/builder \
               tools/dockerd-arm64 \
               tools/linuxkit-cli \
               tools/mkimage-rpi3-squashfs
