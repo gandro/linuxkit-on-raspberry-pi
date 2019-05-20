@@ -9,24 +9,18 @@ jobs:
     steps:
       - checkout
       - linuxkitrpi/wait_for_docker
-      - linuxkitrpi/restore_docker_cache:
-          key: v1-build-layers-arm64
       - run:
           name: Build Packages on ARM64
           command: |
-            ./build.sh -s \
-              images/dockerd.yml \
+            ./build.sh -s -w . \
               pkg/chrony \
               pkg/firmware \
               pkg/wireless-regdb \
               pkg/wpa_supplicant \
               tools/linuxkit-cli \
-              tools/mkimage-rpi3-squashfs \
-            | tee build.log
+              tools/mkimage-rpi3-squashfs
+              images/dockerd.yml
           no_output_timeout: 20m
-      - linuxkitrpi/save_docker_cache:
-          key: v1-build-layers-arm64-{{ .BuildNum }}
-          build_log: build.log
       - persist_to_workspace:
           root: build
           paths:
@@ -37,24 +31,18 @@ jobs:
       - checkout
       - setup_remote_docker:
           version: "18.09.3"
-      - linuxkitrpi/restore_docker_cache:
-          key: v1-build-layers-amd64
       - run:
           name: Build Packages on AMD64
           command: |
-            ./build.sh -s \
+            ./build.sh -s -w . \
               kernel \
               pkg/chrony \
               pkg/wireless-regdb \
-              pkg/wpa_supplicant \
+              pkg/wpa_supplicant
               tools/dockerd-arm64 \
               tools/linuxkit-cli \
-              tools/mkimage-rpi3-squashfs \
-            | tee build.log
+              tools/mkimage-rpi3-squashfs
           no_output_timeout: 20m
-      - linuxkitrpi/save_docker_cache:
-          key: v1-build-layers-amd64-{{ .BuildNum }}
-          build_log: build.log
       - persist_to_workspace:
           root: build
           paths:
@@ -76,7 +64,7 @@ jobs:
       - run:
           name: Push Images to Docker Hub
           command: |
-            ./build.sh -p \
+            ./build.sh -Bp -w . \
               kernel \
               images/dockerd.yml \
               pkg/chrony \
