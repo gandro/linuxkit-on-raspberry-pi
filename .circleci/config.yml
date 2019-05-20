@@ -1,14 +1,14 @@
 version: 2.1
 
 orbs:
-  linuxkitrpi: linuxkitrpi/builder@0.1.1
+  builder: linuxkitrpi/builder@0.1.2
 
 jobs:
   build_arm64:
-    executor: linuxkitrpi/builder_arm64
+    executor: builder/arm64
     steps:
       - checkout
-      - linuxkitrpi/wait_for_docker
+      - builder/wait_for_docker
       - run:
           name: Build Packages on ARM64
           command: |
@@ -27,7 +27,7 @@ jobs:
           paths:
             - "*.tar"
   build_amd64:
-    executor: linuxkitrpi/builder_amd64
+    executor: builder/amd64
     steps:
       - checkout
       - setup_remote_docker:
@@ -50,7 +50,7 @@ jobs:
           paths:
             - "*.tar"
   push:
-    executor: linuxkitrpi/builder_amd64
+    executor: builder/amd64
     steps:
       - checkout
       - attach_workspace:
@@ -73,6 +73,7 @@ jobs:
               pkg/firmware \
               pkg/wireless-regdb \
               pkg/wpa_supplicant \
+              tools/builder \
               tools/dockerd-arm64 \
               tools/linuxkit-cli \
               tools/mkimage-rpi3-squashfs
