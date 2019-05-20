@@ -13,13 +13,13 @@ jobs:
           name: Build Packages on ARM64
           command: |
             ./build.sh -s -w . \
+              images/dockerd.yml \
               pkg/chrony \
               pkg/firmware \
               pkg/wireless-regdb \
               pkg/wpa_supplicant \
               tools/linuxkit-cli \
               tools/mkimage-rpi3-squashfs
-              images/dockerd.yml
           no_output_timeout: 20m
       - persist_to_workspace:
           root: build
@@ -38,7 +38,7 @@ jobs:
               kernel \
               pkg/chrony \
               pkg/wireless-regdb \
-              pkg/wpa_supplicant
+              pkg/wpa_supplicant \
               tools/dockerd-arm64 \
               tools/linuxkit-cli \
               tools/mkimage-rpi3-squashfs
