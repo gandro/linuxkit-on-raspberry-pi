@@ -309,10 +309,11 @@ save() {
   done
 
   if [ -n "$_targets" ] ; then
-    _out="${_dir}/$(printf '%s' $1 | tr '/:' '-').tar"
-    printf "Saving '%s'\n" "$_out"
+    _file="$(printf '%s' $1 | tr '/:' '-')-$(printf '-%s' $_targets).tar"
+    _path="${_dir}/${_file}"
+    printf "Saving '%s'\n" "$_path"
     mkdir -p "$_dir"
-    docker save -o "$_out" $_targets 
+    docker save -o "$_path" $_targets
   fi
 }
 
