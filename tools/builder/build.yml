@@ -1,0 +1,5 @@
+org: linuxkitrpi
+image: builder
+network: true
+extra-sources:
+  - ../../scripts:scripts

@@ -1,4 +1,4 @@
-FROM golang:1.12.0 AS builder
+FROM golang:1.12.5 AS builder
 
 ENV LINUXKIT_REPO=https://github.com/linuxkit/linuxkit.git
 ENV LINUXKIT_COMMIT=8129070a90c2cff14faafd93e07c252861438d0f
@@ -22,7 +22,7 @@ RUN git clone $NOTARY_REPO /go/src/github.com/theupdateframework/notary && \
     make static
 
 FROM docker:18.09
-RUN apk add --no-cache expect git gnupg jq
+RUN apk add --no-cache expect git jq
 COPY --from=builder /go/src/github.com/linuxkit/linuxkit/scripts/push-manifest.sh /usr/local/bin/
 COPY --from=builder /go/src/github.com/linuxkit/linuxkit/scripts/cleanup-older-images.sh /usr/local/bin/
 COPY --from=builder /go/src/github.com/linuxkit/linuxkit/bin/linuxkit /usr/local/bin/
