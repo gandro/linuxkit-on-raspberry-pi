@@ -12,6 +12,7 @@ jobs:
       - run:
           name: Build Packages on ARM64
           command: |
+            mkdir -p build
             ./build.sh -s build -w . \
               images/dockerd.yml \
               pkg/chrony \
@@ -23,9 +24,8 @@ jobs:
               tools/mkimage-rpi3-squashfs
           no_output_timeout: 20m
       - persist_to_workspace:
-          root: build
-          paths:
-            - "*.tar"
+          root: .
+          paths: build
   build_amd64:
     executor: builder/amd64
     steps:
@@ -47,15 +47,14 @@ jobs:
               tools/mkimage-rpi3-squashfs
           no_output_timeout: 20m
       - persist_to_workspace:
-          root: build
-          paths:
-            - "*.tar"
+          root: .
+          paths: build
   push:
     executor: builder/amd64
     steps:
       - checkout
       - attach_workspace:
-          at: build
+          at: .
       - setup_remote_docker:
           version: "18.09.3"
       - run:
