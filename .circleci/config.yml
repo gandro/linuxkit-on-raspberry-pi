@@ -54,12 +54,12 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: .
+          at: /run/images
       - setup_remote_docker:
           version: "18.09.3"
       - run:
           name: Restore Images from Workspace
-          command: find build/ -type f -name '*.tar' -exec docker load -i '{}' \;
+          command: find /run/images -type f -name '*.tar' -exec docker load -i '{}' \;
       - run:
           name: Log in to Docker
           command: docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD"
