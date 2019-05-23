@@ -10,8 +10,8 @@ set -eu
 : ${AGENT_TAG:=e0211387a0107f46ba5571cce2da2490a5049f9c}
 : ${AGENT_CONTAINER_NAME:=linuxkit-cli-agent}
 
-: ${MKIMAGE_RPI3_SQUASHFS_IMAGE:=linuxkitrpi/mkimage-squashfs}
-: ${MKIMAGE_RPI3_SQUASHFS_TAG:=a095a0cd5c879e7ac0b7ecee62ca60a394fa22c7}
+: ${MKIMAGE_RPI3_SQUASHFS_IMAGE:=linuxkitrpi/mkimage-rpi3-squashfs}
+: ${MKIMAGE_RPI3_SQUASHFS_TAG:=5cca8dba50e386b3fb18ce8348f128bf537def0d}
 
 
 fail() {
@@ -251,7 +251,14 @@ yml_rpi3_squashfs_build() {
   _output="sdcard.img"
   if getopts "o:" _arg ; then
     case "$_arg" in
-      "o") _output="$OPTARG"; shift 2 ;;
+      "o")
+        if [ "$OPTARG" = "-" ] ; then
+            _output="/dev/stdout"
+        else
+            _output="$OPTARG"
+        fi
+        shift 2
+        ;;
       "?") return 1 ;;
     esac
   fi
